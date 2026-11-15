@@ -1,0 +1,59 @@
+{
+  "common": {
+    "login": "Log in",
+    "signup": "Sign up",
+    "logout": "Log out",
+    "toggleTheme": "Toggle theme",
+    "switchLocale": "Switch language",
+    "mainNav": "Main navigation",
+    "loading": "Loading…"
+  },
+  "home": {
+    "metaTitle": "{name} — the tactics board in your browser",
+    "metaDescription": "Draw, animate and share your tactical diagrams from any device, with nothing to install.",
+    "badge": "Under construction",
+    "title": "The tactics board that lives in your browser",
+    "subtitle": "Prepare diagrams, animations and training sessions on a computer, tablet or phone. Nothing to install, everything in sync.",
+    "cta": "Create a free account",
+    "secondaryCta": "I already have an account",
+    "pitchLabel": "Illustration of a football pitch with two teams and movement arrows",
+    "featuresTitle": "Built for the touchline",
+    "features": {
+      "editor": { "title": "Full 2D editor", "body": "Players, equipment, lines and zones, with unlimited undo." },
+      "animation": { "title": "Keyframe animation", "body": "Bring a set piece to life in a few minutes." },
+      "sync": { "title": "Instant sync", "body": "One account on all your devices, no per-machine licence." },
+      "share": { "title": "Share by link", "body": "Send an animated diagram to your players, viewable without an account." },
+      "sessions": { "title": "Session planning", "body": "Combine drills into a session and export a clean PDF." },
+      "touch": { "title": "Touch and stylus", "body": "Usable with a finger on a tablet, even pitch-side." }
+    },
+    "roadmapNote": "Features ship in stages: accounts and your personal space are live, the editor is next.",
+    "footer": "Independent product, in development."
+  },
+  "auth": {
+    "loginTitle": "Log in",
+    "loginSubtitle": "Get back to your boards and sessions.",
+    "signupTitle": "Create an account",
+    "signupSubtitle": "It only takes a few seconds to get started.",
+    "email": "Email address",
+    "password": "Password",
+    "passwordHint": "At least 8 characters",
+    "submitLogin": "Log in",
+    "submitSignup": "Create my account",
+    "google": "Continue with Google",
+    "or": "or",
+    "noAccount": "No account yet?",
+    "hasAccount": "Already registered?",
+    "checkEmail": "Account created. Open the link we emailed you to confirm your address.",
+    "errorInvalid": "Incorrect email or password.",
+    "errorNotConfirmed": "Please confirm your address using the email we sent first.",
+    "errorExists": "An account already exists with this address.",
+    "errorCallback": "The sign-in link is invalid or has expired.",
+    "errorGeneric": "Something went wrong. Please try again shortly."
+  },
+  "app": {
+    "title": "My space",
+    "welcome": "Welcome, {email}",
+    "empty": "Your projects will appear here as soon as the editor is available.",
+    "nextStep": "Next up: the 2D editor."
+  }
+}
