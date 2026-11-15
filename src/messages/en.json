@@ -19,15 +19,34 @@
     "pitchLabel": "Illustration of a football pitch with two teams and movement arrows",
     "featuresTitle": "Built for the touchline",
     "features": {
-      "editor": { "title": "Full 2D editor", "body": "Players, equipment, lines and zones, with unlimited undo." },
-      "animation": { "title": "Keyframe animation", "body": "Bring a set piece to life in a few minutes." },
-      "sync": { "title": "Instant sync", "body": "One account on all your devices, no per-machine licence." },
-      "share": { "title": "Share by link", "body": "Send an animated diagram to your players, viewable without an account." },
-      "sessions": { "title": "Session planning", "body": "Combine drills into a session and export a clean PDF." },
-      "touch": { "title": "Touch and stylus", "body": "Usable with a finger on a tablet, even pitch-side." }
+      "editor": {
+        "title": "Full 2D editor",
+        "body": "Players, equipment, lines and zones, with unlimited undo."
+      },
+      "animation": {
+        "title": "Keyframe animation",
+        "body": "Bring a set piece to life in a few minutes."
+      },
+      "sync": {
+        "title": "Instant sync",
+        "body": "One account on all your devices, no per-machine licence."
+      },
+      "share": {
+        "title": "Share by link",
+        "body": "Send an animated diagram to your players, viewable without an account."
+      },
+      "sessions": {
+        "title": "Session planning",
+        "body": "Combine drills into a session and export a clean PDF."
+      },
+      "touch": {
+        "title": "Touch and stylus",
+        "body": "Usable with a finger on a tablet, even pitch-side."
+      }
     },
-    "roadmapNote": "Features ship in stages: accounts and your personal space are live, the editor is next.",
-    "footer": "Independent product, in development."
+    "roadmapNote": "The 2D editor is available as a demo, no sign-up needed. Online saving and animation are next.",
+    "footer": "Independent product, in development.",
+    "tryEditor": "Try the editor"
   },
   "auth": {
     "loginTitle": "Log in",
@@ -53,7 +72,142 @@
   "app": {
     "title": "My space",
     "welcome": "Welcome, {email}",
-    "empty": "Your projects will appear here as soon as the editor is available.",
-    "nextStep": "Next up: the 2D editor."
+    "empty": "Online saving of your projects comes in the next stage. Until then, the editor keeps a draft on this device.",
+    "openEditor": "Open the editor"
+  },
+  "editor": {
+    "title": "Editor",
+    "back": "Back to home",
+    "undo": "Undo",
+    "redo": "Redo",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit to screen",
+    "properties": "Properties",
+    "close": "Close",
+    "toolbarLabel": "Tools",
+    "objects": "{count, plural, =0 {No objects} one {# object} other {# objects}}",
+    "newText": "Text",
+    "teamDefault": "Team {letter}",
+    "tools": {
+      "select": "Select (V)",
+      "pan": "Pan view (H)",
+      "player": "Player (P)",
+      "goalkeeper": "Goalkeeper (K)",
+      "ball": "Ball (B)",
+      "equipment": "Equipment (C)",
+      "zone": "Zone (Z)",
+      "line": "Line (L)",
+      "freehand": "Freehand (D)",
+      "text": "Text",
+      "label": "Label"
+    },
+    "equipment": {
+      "cone": "Cone",
+      "marker": "Marker",
+      "pole": "Pole",
+      "hurdle": "Hurdle",
+      "ladder": "Ladder",
+      "mannequin": "Mannequin",
+      "minigoal": "Mini goal",
+      "goal": "Goal"
+    },
+    "zones": {
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "polygon": "Polygon"
+    },
+    "lines": {
+      "pass": "Pass",
+      "run": "Run",
+      "dribble": "Dribble",
+      "shot": "Shot",
+      "free": "Free line"
+    },
+    "looks": {
+      "disc": "Disc",
+      "jersey": "Jersey"
+    },
+    "panel": {
+      "selection": "{count, plural, one {# object selected} other {# objects selected}}",
+      "pitch": "Pitch",
+      "teams": "Teams",
+      "analysis": "Analysis",
+      "board": "Board",
+      "view": "Framing",
+      "views": {
+        "full": "Full pitch",
+        "half": "Half pitch",
+        "third": "Final third",
+        "box": "Penalty area",
+        "blank": "Blank pitch"
+      },
+      "orientation": "Orientation",
+      "horizontal": "Horizontal",
+      "vertical": "Vertical",
+      "mow": "Mowing",
+      "mows": {
+        "stripes": "Stripes",
+        "checker": "Checker",
+        "plain": "Plain"
+      },
+      "presets": "Themes",
+      "presetNames": {
+        "green": "Green",
+        "dark": "Dark green",
+        "blue": "Blue",
+        "board": "Whiteboard",
+        "night": "Night"
+      },
+      "grass": "Pitch colour",
+      "linesColor": "Line colour",
+      "teamName": "Team name",
+      "addTeam": "Add a team",
+      "removeTeam": "Remove team",
+      "formation": "Formation",
+      "applyFormation": "Place {team}",
+      "voronoi": "Influence zones (Voronoi)",
+      "blockLines": "Block lines and distances",
+      "number": "Number",
+      "name": "Name",
+      "role": "Position",
+      "team": "Team",
+      "look": "Look",
+      "isGoalkeeper": "Goalkeeper",
+      "kind": "Type",
+      "color": "Colour",
+      "width": "Thickness",
+      "dashed": "Dashed",
+      "wavy": "Wavy",
+      "curved": "Curved",
+      "arrowStart": "Arrow at start",
+      "arrowEnd": "Arrow at end",
+      "fill": "Fill",
+      "opacity": "Opacity",
+      "text": "Text",
+      "size": "Size",
+      "asLabel": "Label background",
+      "scale": "Scale",
+      "alignLeft": "Align left",
+      "alignCenterX": "Centre horizontally",
+      "alignRight": "Align right",
+      "alignTop": "Align top",
+      "alignCenterY": "Centre vertically",
+      "alignBottom": "Align bottom",
+      "distributeX": "Distribute horizontally",
+      "distributeY": "Distribute vertically",
+      "group": "Group (Ctrl+G)",
+      "ungroup": "Ungroup",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "front": "Bring to front",
+      "back": "Send to back",
+      "duplicate": "Duplicate (Ctrl+D)",
+      "delete": "Delete",
+      "clear": "Clear the board",
+      "localSave": "Draft saved on this device. Online saving comes in the next stage.",
+      "ink": "Colour",
+      "polygonHint": "Tap to place the corners, then double-tap to close."
+    }
   }
 }
