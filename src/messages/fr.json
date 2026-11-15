@@ -1,0 +1,59 @@
+{
+  "common": {
+    "login": "Se connecter",
+    "signup": "Créer un compte",
+    "logout": "Se déconnecter",
+    "toggleTheme": "Changer de thème",
+    "switchLocale": "Changer de langue",
+    "mainNav": "Navigation principale",
+    "loading": "Chargement…"
+  },
+  "home": {
+    "metaTitle": "{name} — le tableau tactique dans votre navigateur",
+    "metaDescription": "Dessinez, animez et partagez vos schémas tactiques depuis n'importe quel appareil, sans installation.",
+    "badge": "En cours de construction",
+    "title": "Le tableau tactique qui vit dans votre navigateur",
+    "subtitle": "Préparez vos schémas, vos animations et vos séances sur ordinateur, tablette ou téléphone. Rien à installer, tout est synchronisé.",
+    "cta": "Créer un compte gratuit",
+    "secondaryCta": "J'ai déjà un compte",
+    "pitchLabel": "Illustration d'un terrain de football avec deux équipes et des flèches de déplacement",
+    "featuresTitle": "Pensé pour le bord du terrain",
+    "features": {
+      "editor": { "title": "Éditeur 2D complet", "body": "Joueurs, matériel, tracés et zones, avec annulation illimitée." },
+      "animation": { "title": "Animation par images clés", "body": "Faites vivre un coup de pied arrêté en quelques minutes." },
+      "sync": { "title": "Synchronisation instantanée", "body": "Un seul compte sur tous vos appareils, sans licence par machine." },
+      "share": { "title": "Partage par lien", "body": "Envoyez un schéma animé à vos joueurs, lisible sans compte." },
+      "sessions": { "title": "Planification de séances", "body": "Assemblez vos exercices en séance et exportez un PDF propre." },
+      "touch": { "title": "Tactile et stylet", "body": "Utilisable au doigt sur tablette, même au bord du terrain." }
+    },
+    "roadmapNote": "Les fonctions arrivent par étapes : le compte et l'espace personnel sont déjà disponibles, l'éditeur suit.",
+    "footer": "Produit indépendant, en développement."
+  },
+  "auth": {
+    "loginTitle": "Connexion",
+    "loginSubtitle": "Retrouvez vos tableaux et vos séances.",
+    "signupTitle": "Créer un compte",
+    "signupSubtitle": "Quelques secondes suffisent pour commencer.",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "passwordHint": "8 caractères minimum",
+    "submitLogin": "Se connecter",
+    "submitSignup": "Créer mon compte",
+    "google": "Continuer avec Google",
+    "or": "ou",
+    "noAccount": "Pas encore de compte ?",
+    "hasAccount": "Déjà inscrit ?",
+    "checkEmail": "Compte créé. Ouvrez le lien reçu par e-mail pour confirmer votre adresse.",
+    "errorInvalid": "E-mail ou mot de passe incorrect.",
+    "errorNotConfirmed": "Confirmez d'abord votre adresse via l'e-mail reçu.",
+    "errorExists": "Un compte existe déjà avec cette adresse.",
+    "errorCallback": "Le lien de connexion est invalide ou a expiré.",
+    "errorGeneric": "Une erreur est survenue. Réessayez dans un instant."
+  },
+  "app": {
+    "title": "Mon espace",
+    "welcome": "Bienvenue, {email}",
+    "empty": "Vos projets apparaîtront ici dès que l'éditeur sera disponible.",
+    "nextStep": "Prochaine étape : l'éditeur 2D."
+  }
+}
