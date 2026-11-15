@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Jetons de design — voir docs/DESIGN_SYSTEM.md */
+:root {
+  --background: #fbfcfb;
+  --foreground: #0f1a14;
+  --card: #ffffff;
+  --card-foreground: #0f1a14;
+  --muted: #eef2ef;
+  --muted-foreground: #55645b;
+  --border: #dbe3dd;
+  --input: #c9d4cc;
+  --primary: #0f7a45;
+  --primary-foreground: #ffffff;
+  --secondary: #e6ede8;
+  --secondary-foreground: #14241b;
+  --accent: #f4b740;
+  --accent-foreground: #2a1c00;
+  --destructive: #c0352b;
+  --ring: #0f7a45;
+  --pitch: #2f8f57;
+  --pitch-stripe: #2a8450;
+  --pitch-line: #f2f7f3;
+  --team-a: #1d4ed8;
+  --team-b: #dc2626;
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #0b110e;
+  --foreground: #e8efea;
+  --card: #111a15;
+  --card-foreground: #e8efea;
+  --muted: #17221c;
+  --muted-foreground: #9aaba0;
+  --border: #223028;
+  --input: #2c3d33;
+  --primary: #35c57a;
+  --primary-foreground: #04150b;
+  --secondary: #1a2620;
+  --secondary-foreground: #e8efea;
+  --accent: #f4b740;
+  --accent-foreground: #2a1c00;
+  --destructive: #f0695f;
+  --ring: #35c57a;
+  --pitch: #1f6b40;
+  --pitch-stripe: #1b6039;
+  --pitch-line: #d6e6db;
+  --team-a: #60a5fa;
+  --team-b: #f87171;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes pitch-run {
+  0%, 15% { transform: translate(0, 0); }
+  55%, 100% { transform: translate(var(--dx, 0), var(--dy, 0)); }
+}
+
+.pitch-run {
+  animation: pitch-run 3.2s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pitch-run {
+    animation: none;
+  }
+}
