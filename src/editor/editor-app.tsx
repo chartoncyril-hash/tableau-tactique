@@ -21,7 +21,7 @@ const TOOL_KEYS: Record<string, Tool> = {
   p: { type: "player", goalkeeper: false },
   k: { type: "player", goalkeeper: true },
   b: { type: "ball" },
-  c: { type: "equipment", kind: "cone" },
+  c: { type: "equipment", kind: "cone", color: "#f97316" },
   z: { type: "zone", shape: "rect" },
   l: { type: "line", kind: "pass" },
   d: { type: "freehand" },

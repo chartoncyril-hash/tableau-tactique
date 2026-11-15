@@ -6,6 +6,7 @@ import { formationSlots, type FormationId } from "./scene/formations";
 import { alignDeltas, distributeDeltas, type AlignMode } from "./scene/geometry";
 import {
   MAX_TEAMS,
+  type BallStyle,
   type EquipmentKind,
   type LineKind,
   type PitchSettings,
@@ -20,8 +21,8 @@ export type Tool =
   | { type: "select" }
   | { type: "pan" }
   | { type: "player"; goalkeeper: boolean }
-  | { type: "ball" }
-  | { type: "equipment"; kind: EquipmentKind }
+  | { type: "ball"; style?: BallStyle }
+  | { type: "equipment"; kind: EquipmentKind; color?: string }
   | { type: "zone"; shape: ZoneShape }
   | { type: "text"; label: boolean }
   | { type: "line"; kind: LineKind }

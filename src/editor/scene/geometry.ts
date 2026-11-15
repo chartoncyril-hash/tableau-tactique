@@ -1,3 +1,4 @@
+import { BALL_SIZE, EQUIPMENT_SIZE } from "./catalog";
 import type { LineObject, SceneObject } from "./types";
 
 export interface Box {
@@ -8,7 +9,6 @@ export interface Box {
 }
 
 export const PLAYER_RADIUS = 1.6;
-export const BALL_RADIUS = 0.75;
 
 function boxFromPoints(points: number[], ox: number, oy: number, pad = 0): Box {
   let minX = Infinity;
@@ -29,24 +29,16 @@ function boxFromPoints(points: number[], ox: number, oy: number, pad = 0): Box {
   };
 }
 
-export const EQUIPMENT_SIZE: Record<string, { w: number; h: number }> = {
-  cone: { w: 1.4, h: 1.4 },
-  marker: { w: 1.2, h: 1.2 },
-  pole: { w: 0.9, h: 0.9 },
-  hurdle: { w: 2.4, h: 0.8 },
-  ladder: { w: 5, h: 1.2 },
-  mannequin: { w: 1.6, h: 1.6 },
-  minigoal: { w: 1.2, h: 2.4 },
-  goal: { w: 2, h: 7.32 },
-};
 
 /** Boîte englobante alignée sur les axes ; la rotation est ignorée (approximation). */
 export function objectBox(obj: SceneObject): Box {
   switch (obj.type) {
     case "player":
       return { x: obj.x - PLAYER_RADIUS, y: obj.y - PLAYER_RADIUS, w: PLAYER_RADIUS * 2, h: PLAYER_RADIUS * 2 };
-    case "ball":
-      return { x: obj.x - BALL_RADIUS, y: obj.y - BALL_RADIUS, w: BALL_RADIUS * 2, h: BALL_RADIUS * 2 };
+    case "ball": {
+      const s = BALL_SIZE[obj.style ?? "classic"];
+      return { x: obj.x - s.w / 2, y: obj.y - s.h / 2, w: s.w, h: s.h };
+    }
     case "equipment": {
       const s = EQUIPMENT_SIZE[obj.kind];
       const w = s.w * obj.scale;

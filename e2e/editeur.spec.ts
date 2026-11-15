@@ -85,3 +85,21 @@ test("le brouillon survit au rechargement", async ({ page }) => {
   await page.reload();
   await expect(count(page)).toHaveText("11 objets");
 });
+
+test("choisir un objet dans la banque et le poser", async ({ page }) => {
+  const canvas = await openEditor(page);
+  await page.getByRole("button", { name: "Banque d'objets (C)" }).click();
+  const palette = page.getByTestId("object-palette");
+  await expect(palette.getByRole("button")).toHaveCount(45);
+  const box = (await canvas.boundingBox())!;
+  // Zone du canevas non recouverte par la banque, sur ordinateur comme sur mobile.
+  const spot = { x: box.width * 0.8, y: box.height * 0.5 };
+  for (const name of ["But à 11", "Mur de mannequins", "Ballon de rugby"]) {
+    const item = palette.getByRole("button", { name }).first();
+    await item.scrollIntoViewIfNeeded();
+    await item.click();
+    await expect(item).toHaveAttribute("aria-pressed", "true");
+    await canvas.click({ position: spot });
+  }
+  await expect(count(page)).toHaveText("3 objets");
+});

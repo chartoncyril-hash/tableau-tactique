@@ -41,19 +41,46 @@ export interface PlayerObject extends Base {
   goalkeeper: boolean;
 }
 
+export const BALL_STYLES = [
+  "classic",
+  "blue",
+  "red",
+  "yellow",
+  "futsal",
+  "rugby",
+  "volley",
+  "tennis",
+  "medicine",
+] as const;
+export type BallStyle = (typeof BALL_STYLES)[number];
+
 export interface BallObject extends Base {
   type: "ball";
+  /** Absent = ballon classique (compatibilité avec les premières scènes). */
+  style?: BallStyle;
 }
 
 export const EQUIPMENT_KINDS = [
   "cone",
   "marker",
   "pole",
+  "flag",
+  "ring",
   "hurdle",
   "ladder",
+  "grid",
   "mannequin",
+  "wall",
   "minigoal",
+  "goal5",
   "goal",
+  "rebounder",
+  "mat",
+  "bench",
+  "box",
+  "bosu",
+  "dumbbell",
+  "bib",
 ] as const;
 export type EquipmentKind = (typeof EQUIPMENT_KINDS)[number];
 

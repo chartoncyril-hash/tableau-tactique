@@ -42,8 +42,8 @@ Champs communs : `id`, `type`, `x`, `y`, `rotation`, et en option `locked`, `gro
 | `type` | Champs propres |
 | --- | --- |
 | `player` | `teamId`, `number`, `name`, `role`, `look` (`disc` \| `jersey`), `goalkeeper` |
-| `ball` | — |
-| `equipment` | `kind` (`cone`, `marker`, `pole`, `hurdle`, `ladder`, `mannequin`, `minigoal`, `goal`), `color`, `scale` |
+| `ball` | `style` facultatif (`classic`, `blue`, `red`, `yellow`, `futsal`, `rugby`, `volley`, `tennis`, `medicine`) |
+| `equipment` | `kind` (20 types, liste dans `EQUIPMENT_KINDS`), `color`, `scale` |
 | `zone` | `shape` (`rect` \| `ellipse` \| `polygon`), `width`, `height`, `points`, `fill`, `opacity` |
 | `text` | `text`, `size`, `color`, `label` (fond d'étiquette) |
 | `line` | `kind` (`pass`, `run`, `dribble`, `shot`, `free`), `points` `[x0,y0,cx,cy,x1,y1]`, `curved`, `dashed`, `wavy`, `arrowStart`, `arrowEnd`, `width`, `color` |
@@ -58,3 +58,10 @@ Champs communs : `id`, `type`, `x`, `y`, `rotation`, et en option `locked`, `gro
 
 Créer `src/editor/pitches/<sport>.ts` (dimensions, tracés, cadrages, toujours décrits à
 l'horizontale) et l'enregistrer dans `src/editor/pitches/index.ts`. Le moteur ne change pas.
+
+## Banque d'objets
+
+`src/editor/scene/catalog.ts` décrit chaque objet par des primitives vectorielles (cercle,
+ellipse, rectangle, ligne) en mètres. La même description alimente le canevas et les vignettes
+du sélecteur. Ajouter un objet : un `kind` dans `EQUIPMENT_KINDS`, sa taille, son dessin, une
+entrée de catalogue et son nom dans `src/messages`.

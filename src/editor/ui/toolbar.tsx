@@ -14,9 +14,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { EQUIPMENT_KINDS, LINE_KINDS, type ZoneShape } from "../scene/types";
+import { LINE_KINDS, type ZoneShape } from "../scene/types";
 import { useEditor, type Tool } from "../store";
 import { Chip, ColorInput, IconButton } from "./controls";
+import { ObjectPalette } from "./object-palette";
 
 const TOOLS: { tool: Tool; icon: LucideIcon; key: string }[] = [
   { tool: { type: "select" }, icon: MousePointer2, key: "select" },
@@ -24,7 +25,7 @@ const TOOLS: { tool: Tool; icon: LucideIcon; key: string }[] = [
   { tool: { type: "player", goalkeeper: false }, icon: User, key: "player" },
   { tool: { type: "player", goalkeeper: true }, icon: Shield, key: "goalkeeper" },
   { tool: { type: "ball" }, icon: CircleDot, key: "ball" },
-  { tool: { type: "equipment", kind: "cone" }, icon: Cone, key: "equipment" },
+  { tool: { type: "equipment", kind: "cone", color: "#f97316" }, icon: Cone, key: "equipment" },
   { tool: { type: "zone", shape: "rect" }, icon: Shapes, key: "zone" },
   { tool: { type: "line", kind: "pass" }, icon: MoveUpRight, key: "line" },
   { tool: { type: "freehand" }, icon: Pencil, key: "freehand" },
@@ -75,12 +76,8 @@ export function Toolbar() {
         ))}
       </>
     );
-  } else if (tool.type === "equipment") {
-    options = EQUIPMENT_KINDS.map((kind) => (
-      <Chip key={kind} active={tool.kind === kind} onClick={() => setTool({ type: "equipment", kind })}>
-        {t(`equipment.${kind}`)}
-      </Chip>
-    ));
+  } else if (tool.type === "equipment" || tool.type === "ball") {
+    options = <ObjectPalette />;
   } else if (tool.type === "zone") {
     options = (
       <>

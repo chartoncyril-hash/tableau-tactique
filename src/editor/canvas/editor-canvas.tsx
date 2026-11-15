@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Circle, Ellipse, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import { create } from "zustand";
 import { viewRect, worldRect } from "../pitches";
+import { DEFAULT_EQUIPMENT_COLOR, defaultEquipmentScale } from "../scene/catalog";
 import {
   boxesIntersect,
   clusterLines,
@@ -40,16 +41,6 @@ const MAX_SCALE = 90;
 const ACCENT = "#f4b740";
 const SELECT = "#38bdf8";
 
-export const EQUIPMENT_COLORS = {
-  cone: "#f97316",
-  marker: "#facc15",
-  pole: "#ef4444",
-  hurdle: "#fde047",
-  ladder: "#facc15",
-  mannequin: "#2563eb",
-  minigoal: "#ffffff",
-  goal: "#ffffff",
-} as const;
 
 /** État de vue partagé avec la barre du haut. */
 export const useView = create<{ zoom: number }>(() => ({ zoom: 100 }));
@@ -261,15 +252,15 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
         st.addPlayerAt(p.x, p.y, tool.goalkeeper);
         break;
       case "ball":
-        st.addObject({ type: "ball", x: p.x, y: p.y, rotation: 0 }, "addBall");
+        st.addObject({ type: "ball", style: tool.style ?? "classic", x: p.x, y: p.y, rotation: 0 }, "addBall");
         break;
       case "equipment":
         st.addObject(
           {
             type: "equipment",
             kind: tool.kind,
-            color: EQUIPMENT_COLORS[tool.kind],
-            scale: 1,
+            color: tool.color ?? DEFAULT_EQUIPMENT_COLOR[tool.kind],
+            scale: defaultEquipmentScale(tool.kind),
             x: p.x,
             y: p.y,
             rotation: 0,

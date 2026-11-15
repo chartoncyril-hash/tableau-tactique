@@ -95,7 +95,7 @@
       "player": "Player (P)",
       "goalkeeper": "Goalkeeper (K)",
       "ball": "Ball (B)",
-      "equipment": "Equipment (C)",
+      "equipment": "Object bank (C)",
       "zone": "Zone (Z)",
       "line": "Line (L)",
       "freehand": "Freehand (D)",
@@ -104,13 +104,25 @@
     },
     "equipment": {
       "cone": "Cone",
-      "marker": "Marker",
+      "marker": "Disc marker",
       "pole": "Pole",
+      "flag": "Flag",
+      "ring": "Hoop",
       "hurdle": "Hurdle",
-      "ladder": "Ladder",
+      "ladder": "Agility ladder",
+      "grid": "Agility grid",
       "mannequin": "Mannequin",
+      "wall": "Mannequin wall",
       "minigoal": "Mini goal",
-      "goal": "Goal"
+      "goal5": "7-a-side goal",
+      "goal": "Full-size goal",
+      "rebounder": "Rebounder",
+      "mat": "Mat",
+      "bench": "Bench",
+      "box": "Plyo box",
+      "bosu": "Balance trainer",
+      "dumbbell": "Dumbbell",
+      "bib": "Bib"
     },
     "zones": {
       "rect": "Rectangle",
@@ -208,6 +220,27 @@
       "localSave": "Draft saved on this device. Online saving comes in the next stage.",
       "ink": "Colour",
       "polygonHint": "Tap to place the corners, then double-tap to close."
+    },
+    "bank": {
+      "categories": {
+        "balls": "Balls",
+        "cones": "Cones and poles",
+        "agility": "Agility",
+        "goals": "Goals",
+        "mannequins": "Mannequins",
+        "fitness": "Conditioning"
+      },
+      "balls": {
+        "classic": "Classic ball",
+        "blue": "Blue ball",
+        "red": "Red ball",
+        "yellow": "Yellow ball",
+        "futsal": "Futsal ball",
+        "rugby": "Rugby ball",
+        "volley": "Volleyball",
+        "tennis": "Tennis ball",
+        "medicine": "Medicine ball"
+      }
     }
   }
 }

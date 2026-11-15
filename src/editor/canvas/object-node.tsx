@@ -3,9 +3,10 @@
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { memo } from "react";
-import { Arrow, Circle, Ellipse, Group, Line, Path, Rect, RegularPolygon, Text } from "react-konva";
-import { BALL_RADIUS, objectBox, PLAYER_RADIUS, sampleLine } from "../scene/geometry";
-import type { EquipmentObject, SceneObject } from "../scene/types";
+import { Arrow, Circle, Ellipse, Group, Line, Path, Rect, Text } from "react-konva";
+import { BALL_SIZE, ballPrims, EQUIPMENT_SIZE, equipmentPrims, type Prim } from "../scene/catalog";
+import { objectBox, PLAYER_RADIUS, sampleLine } from "../scene/geometry";
+import type { SceneObject } from "../scene/types";
 
 const JERSEY =
   "M-1.1,-1.6 L-0.45,-1.6 Q0,-1.15 0.45,-1.6 L1.1,-1.6 L2.05,-0.75 L1.5,-0.1 L1.1,-0.45 L1.1,1.6 L-1.1,1.6 L-1.1,-0.45 L-1.5,-0.1 L-2.05,-0.75 Z";
@@ -37,68 +38,34 @@ interface Props {
 
 const flat = { perfectDrawEnabled: false, shadowForStrokeEnabled: false } as const;
 
-function Equipment({ obj }: { obj: EquipmentObject }) {
-  const c = obj.color;
-  switch (obj.kind) {
-    case "cone":
-      return <RegularPolygon sides={3} radius={0.85} fill={c} stroke="#fff" strokeWidth={0.12} {...flat} />;
-    case "marker":
-      return (
-        <>
-          <Circle radius={0.6} fill={c} stroke="rgba(0,0,0,0.35)" strokeWidth={0.1} {...flat} />
-          <Circle radius={0.22} fill="rgba(0,0,0,0.25)" listening={false} />
-        </>
-      );
-    case "pole":
-      return (
-        <>
-          <Circle radius={0.42} fill="rgba(0,0,0,0.25)" {...flat} />
-          <Circle radius={0.24} fill={c} stroke="#fff" strokeWidth={0.08} listening={false} />
-        </>
-      );
-    case "hurdle":
-      return (
-        <Line
-          points={[-1.2, 0.4, -1.2, -0.4, 1.2, -0.4, 1.2, 0.4]}
-          stroke={c}
-          strokeWidth={0.22}
-          lineCap="round"
-          lineJoin="round"
-          hitStrokeWidth={1.2}
-          {...flat}
-        />
-      );
-    case "ladder":
-      return (
-        <>
-          <Rect x={-2.5} y={-0.6} width={5} height={1.2} stroke={c} strokeWidth={0.14} fill="rgba(0,0,0,0.08)" {...flat} />
-          {[-1.875, -1.25, -0.625, 0, 0.625, 1.25, 1.875].map((x) => (
-            <Line key={x} points={[x, -0.6, x, 0.6]} stroke={c} strokeWidth={0.12} listening={false} />
-          ))}
-        </>
-      );
-    case "mannequin":
-      return (
-        <>
-          <Rect x={-0.55} y={-0.2} width={1.1} height={1} cornerRadius={0.25} fill={c} {...flat} />
-          <Circle y={-0.5} radius={0.38} fill={c} stroke="#fff" strokeWidth={0.08} {...flat} />
-        </>
-      );
-    case "minigoal":
-      return (
-        <>
-          <Rect x={-0.6} y={-1.2} width={1.2} height={2.4} fill={c} opacity={0.25} {...flat} />
-          <Line points={[0.6, -1.2, -0.6, -1.2, -0.6, 1.2, 0.6, 1.2]} stroke={c} strokeWidth={0.2} lineJoin="round" listening={false} />
-        </>
-      );
-    case "goal":
-      return (
-        <>
-          <Rect x={-1} y={-3.66} width={2} height={7.32} fill={c} opacity={0.25} {...flat} />
-          <Line points={[1, -3.66, -1, -3.66, -1, 3.66, 1, 3.66]} stroke={c} strokeWidth={0.26} lineJoin="round" listening={false} />
-        </>
-      );
-  }
+/** Rend une liste de primitives de la banque d'objets. */
+function Prims({ prims, w, h }: { prims: Prim[]; w: number; h: number }) {
+  return (
+    <>
+      {/* Zone de saisie : toute la boîte de l'objet, même là où le dessin est creux. */}
+      <Rect x={-w / 2} y={-h / 2} width={w} height={h} fill="rgba(0,0,0,0)" {...flat} />
+      {prims.map((p, i) => {
+        const common = {
+          fill: p.fill,
+          stroke: p.stroke,
+          strokeWidth: p.sw,
+          opacity: p.o,
+          listening: false,
+          ...flat,
+        };
+        switch (p.t) {
+          case "circle":
+            return <Circle key={i} {...common} x={p.x} y={p.y} radius={p.r} />;
+          case "ellipse":
+            return <Ellipse key={i} {...common} x={p.x} y={p.y} radiusX={p.rx} radiusY={p.ry} />;
+          case "rect":
+            return <Rect key={i} {...common} x={p.x} y={p.y} width={p.w} height={p.h} cornerRadius={p.r} />;
+          case "line":
+            return <Line key={i} {...common} points={p.pts} closed={p.closed} lineCap="round" lineJoin="round" />;
+        }
+      })}
+    </>
+  );
 }
 
 function Shape({ obj, teamColor, ink }: Pick<Props, "obj" | "teamColor" | "ink">) {
@@ -158,15 +125,12 @@ function Shape({ obj, teamColor, ink }: Pick<Props, "obj" | "teamColor" | "ink">
         </>
       );
     }
-    case "ball":
-      return (
-        <>
-          <Circle radius={BALL_RADIUS} fill="#fff" stroke="#111827" strokeWidth={0.14} {...flat} />
-          <RegularPolygon sides={5} radius={0.32} fill="#111827" listening={false} />
-        </>
-      );
+    case "ball": {
+      const style = obj.style ?? "classic";
+      return <Prims prims={ballPrims(style)} {...BALL_SIZE[style]} />;
+    }
     case "equipment":
-      return <Equipment obj={obj} />;
+      return <Prims prims={equipmentPrims(obj.kind, obj.color)} {...EQUIPMENT_SIZE[obj.kind]} />;
     case "zone":
       if (obj.shape === "rect") {
         return (

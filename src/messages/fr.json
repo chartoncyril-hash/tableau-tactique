@@ -95,7 +95,7 @@
       "player": "Joueur (P)",
       "goalkeeper": "Gardien (K)",
       "ball": "Ballon (B)",
-      "equipment": "Matériel (C)",
+      "equipment": "Banque d'objets (C)",
       "zone": "Zone (Z)",
       "line": "Tracé (L)",
       "freehand": "Main levée (D)",
@@ -104,13 +104,25 @@
     },
     "equipment": {
       "cone": "Cône",
-      "marker": "Plot",
+      "marker": "Coupelle",
       "pole": "Piquet",
+      "flag": "Drapeau",
+      "ring": "Cerceau",
       "hurdle": "Haie",
-      "ladder": "Échelle",
+      "ladder": "Échelle de rythme",
+      "grid": "Carré d'agilité",
       "mannequin": "Mannequin",
+      "wall": "Mur de mannequins",
       "minigoal": "Mini-but",
-      "goal": "But"
+      "goal5": "But à 8",
+      "goal": "But à 11",
+      "rebounder": "Filet de rebond",
+      "mat": "Tapis",
+      "bench": "Banc",
+      "box": "Caisson de saut",
+      "bosu": "Demi-ballon d'équilibre",
+      "dumbbell": "Haltère",
+      "bib": "Chasuble"
     },
     "zones": {
       "rect": "Rectangle",
@@ -208,6 +220,27 @@
       "localSave": "Brouillon enregistré sur cet appareil. La sauvegarde en ligne arrive à l'étape suivante.",
       "ink": "Couleur",
       "polygonHint": "Touchez pour poser les sommets, puis touchez deux fois pour fermer."
+    },
+    "bank": {
+      "categories": {
+        "balls": "Ballons",
+        "cones": "Cônes et piquets",
+        "agility": "Agilité",
+        "goals": "Buts",
+        "mannequins": "Mannequins",
+        "fitness": "Préparation"
+      },
+      "balls": {
+        "classic": "Ballon classique",
+        "blue": "Ballon bleu",
+        "red": "Ballon rouge",
+        "yellow": "Ballon jaune",
+        "futsal": "Ballon de futsal",
+        "rugby": "Ballon de rugby",
+        "volley": "Ballon de volley",
+        "tennis": "Balle de tennis",
+        "medicine": "Médecine-ball"
+      }
     }
   }
 }
