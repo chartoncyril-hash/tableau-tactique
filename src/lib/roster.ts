@@ -17,7 +17,10 @@ export interface Kit {
 export interface TeamRow {
   id: string;
   name: string;
+  /** Nom du club affiché sur la fiche (texte libre). */
   club: string;
+  /** Espace club propriétaire ; nul pour une équipe personnelle. */
+  club_id: string | null;
   category: string;
   kit: Kit;
   created_at: string;

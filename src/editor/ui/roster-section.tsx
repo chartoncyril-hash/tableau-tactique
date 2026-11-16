@@ -7,21 +7,24 @@ import { listPlayers, listTeams } from "@/lib/data/roster-api";
 import { fullName, shortName, sortPlayers, type PlayerRow, type TeamRow } from "@/lib/roster";
 import type { FormationId } from "../scene/formations";
 import type { PlayerObject } from "../scene/types";
+import { useProject } from "../project-session";
 import { useEditor } from "../store";
 import { Field, Select } from "./controls";
 
 /** Équipes de l'effectif ; vide hors connexion (éditeur de démonstration). */
 function useRosterTeams() {
+  // Effectifs de l'espace du projet ouvert (personnel ou club).
+  const clubId = useProject((s) => s.project?.club_id ?? null);
   const [teams, setTeams] = useState<TeamRow[]>([]);
   useEffect(() => {
     let cancelled = false;
-    listTeams()
+    listTeams(clubId)
       .then((rows) => !cancelled && setTeams(rows))
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [clubId]);
   return teams;
 }
 

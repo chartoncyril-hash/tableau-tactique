@@ -9,6 +9,12 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isGoogleAuthEnabled } from "@/lib/supabase/env";
 
+/** Page où revenir après connexion (`?next=`) : seulement l'espace connecté ou une invitation. */
+function nextTarget(): string {
+  const next = new URLSearchParams(window.location.search).get("next") ?? "";
+  return /^\/(app(\/[\w/-]*)?|invite\/[0-9a-f]{32})$/.test(next) ? next : "/app";
+}
+
 type Mode = "login" | "signup";
 
 const noop = () => () => {};
@@ -29,17 +35,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
   // Tant que la page n'est pas active, un envoi partirait en rechargement natif : on l'empêche.
   const hydrated = useHydrated();
   const [notice, setNotice] = useState<Notice>(null);
+  // Cible de retour transmise au lien « créer un compte / se connecter » (lue dans le navigateur).
+  const [next, setNext] = useState<string | null>(null);
 
   // Retour d'un lien de connexion invalide (`?error=callback`), lu dans le navigateur.
   useEffect(() => {
+    const target = nextTarget();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- information disponible seulement après le chargement
+    if (target !== "/app") setNext(target);
     if (new URLSearchParams(window.location.search).get("error") === "callback") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- information disponible seulement après le chargement
       setNotice({ kind: "error", text: t("errorCallback") });
     }
   }, [t]);
 
   const callbackUrl = () =>
-    `${window.location.origin}/auth/callback?next=/${locale}/app`;
+    `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/${locale}${nextTarget()}`)}`;
 
   function describe(code: string | undefined) {
     if (code === "invalid_credentials") return t("errorInvalid");
@@ -68,7 +78,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           return;
         }
         // Pas de refresh juste après : il peut annuler la navigation. La page cible est rendue à la requête.
-        router.replace("/app");
+        router.replace(nextTarget());
         return;
       }
 
@@ -83,7 +93,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       }
       if (data.session) {
         // Pas de refresh juste après : il peut annuler la navigation. La page cible est rendue à la requête.
-        router.replace("/app");
+        router.replace(nextTarget());
         return;
       }
       // Supabase renvoie un utilisateur sans identité si l'adresse existe déjà.
@@ -183,7 +193,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <p className="text-sm text-muted-foreground">
         {mode === "login" ? t("noAccount") : t("hasAccount")}{" "}
         <Link
-          href={mode === "login" ? "/signup" : "/login"}
+          href={{ pathname: mode === "login" ? "/signup" : "/login", query: next ? { next } : undefined }}
           className="font-medium text-foreground underline underline-offset-4"
         >
           {mode === "login" ? t("submitSignup") : t("submitLogin")}

@@ -14,6 +14,7 @@ import {
   insertPlayers,
   listPlayers,
   loadTeam,
+  moveTeam,
   removePlayerPhoto,
   setPlayerPhoto,
   trashTeam,
@@ -35,6 +36,7 @@ import {
   type TeamRow,
 } from "@/lib/roster";
 import { cn } from "@/lib/utils";
+import { canEditRole, roleIn, useWorkspace } from "@/lib/workspace";
 import { KitPreview } from "./kit-preview";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -195,6 +197,7 @@ export function TeamDetail({ id }: { id: string | null }) {
   const [save, setSave] = useState<Save>("saved");
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const [confirmTeam, setConfirmTeam] = useState(false);
+  const clubs = useWorkspace((s) => s.clubs);
   const csv = useRef<HTMLInputElement>(null);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const patches = useRef(new Map<string, Record<string, unknown>>());
@@ -333,6 +336,18 @@ export function TeamDetail({ id }: { id: string | null }) {
   };
 
   const Icon = save === "error" ? CloudOff : save === "saved" ? Cloud : LoaderCircle;
+  const canEdit = canEditRole(roleIn(team.club_id, clubs));
+  // Espaces où l'équipe peut aller : le mien et les clubs où je peux modifier.
+  const spaces = [{ id: "", name: t("personalSpace") }, ...clubs.filter((c) => canEditRole(c.role))];
+  const changeSpace = (value: string) =>
+    run(async () => {
+      const clubId = value || null;
+      const moved = await moveTeam(team, players, clubId);
+      setTeam({ ...team, club_id: clubId });
+      setPlayers(moved);
+      requestPhotos(moved.flatMap((p) => (p.photo_path ? [p.photo_path] : [])));
+      setNotice({ kind: "info", text: t("spaceChanged") });
+    });
 
   return (
     <div className="flex flex-col gap-5">
@@ -347,6 +362,8 @@ export function TeamDetail({ id }: { id: string | null }) {
         </span>
       </div>
 
+      {!canEdit && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{t("viewerHint")}</p>}
+      <fieldset disabled={!canEdit} className="contents">
       <Card className="grid gap-4 p-4 md:grid-cols-[1fr_auto]">
         <div className="grid gap-3 sm:grid-cols-3">
           {(["name", "club", "category"] as const).map((key) => (
@@ -389,12 +406,25 @@ export function TeamDetail({ id }: { id: string | null }) {
             </select>
           </label>
         </fieldset>
+        {spaces.length > 1 && canEdit && (
+          <label className="flex flex-col gap-1 text-sm md:col-span-2 md:max-w-sm">
+            <span className="text-muted-foreground">{t("space")}</span>
+            <select value={team.club_id ?? ""} onChange={(e) => void changeSpace(e.target.value)} className={select}>
+              {spaces.map((space) => (
+                <option key={space.id} value={space.id}>
+                  {space.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </Card>
+      </fieldset>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-medium">{t("players", { count: players.length })}</h2>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => csv.current?.click()}>
+          <Button variant="outline" size="sm" disabled={!canEdit} onClick={() => csv.current?.click()}>
             <Upload aria-hidden />
             {t("importCsv")}
           </Button>
@@ -403,7 +433,7 @@ export function TeamDetail({ id }: { id: string | null }) {
             <Download aria-hidden />
             {t("exportCsv")}
           </Button>
-          <Button size="sm" onClick={addPlayer}>
+          <Button size="sm" disabled={!canEdit} onClick={addPlayer}>
             <Plus aria-hidden />
             {t("addPlayer")}
           </Button>
@@ -419,6 +449,7 @@ export function TeamDetail({ id }: { id: string | null }) {
       {players.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground">{t("noPlayers")}</Card>
       ) : (
+        <fieldset disabled={!canEdit} className="contents">
         <ul className="flex flex-col gap-2" data-testid="player-list">
           {players.map((player) => (
             <PlayerItem
@@ -435,7 +466,7 @@ export function TeamDetail({ id }: { id: string | null }) {
               }
               onPhoto={(file) =>
                 run(async () => {
-                  const path = await setPlayerPhoto(player, await preparePhoto(file));
+                  const path = await setPlayerPhoto(player, await preparePhoto(file), team.club_id);
                   setPlayers((list) => list.map((p) => (p.id === player.id ? { ...p, photo_path: path } : p)));
                   requestPhotos([path]);
                 })
@@ -449,8 +480,10 @@ export function TeamDetail({ id }: { id: string | null }) {
             />
           ))}
         </ul>
+        </fieldset>
       )}
 
+      {canEdit && (
       <div className="mt-4 border-t pt-4">
         {confirmTeam ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -469,6 +502,7 @@ export function TeamDetail({ id }: { id: string | null }) {
           </Button>
         )}
       </div>
+      )}
     </div>
   );
 }

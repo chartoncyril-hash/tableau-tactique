@@ -67,6 +67,8 @@ export interface EditorState {
   future: HistoryEntry[];
   clipboard: SceneObject[];
   liveBase: Scene | null;
+  /** Lecture seule (lecteur d'un club) : aucune modification de la scène n'est appliquée. */
+  readOnly: boolean;
   /** Étape d'animation affichée et modifiée : 0 = départ. */
   currentStep: number;
   /** Vrai une fois la scène initiale chargée dans le navigateur. */
@@ -262,10 +264,12 @@ export const useEditor = create<EditorState>()((set, get) => ({
   future: [],
   clipboard: [],
   liveBase: null,
+  readOnly: false,
   currentStep: 0,
   hydrated: false,
 
   commit(label, recipe, coalesceKey, raw) {
+    if (get().readOnly) return;
     const { scene, past, currentStep } = get();
     const after = raw ? produce(scene, recipe) : produceAtStep(scene, currentStep, recipe);
     if (after === scene) return;
@@ -290,6 +294,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
     if (!get().liveBase) set({ liveBase: get().scene });
   },
   live(recipe) {
+    if (get().readOnly) return;
     set({ scene: produceAtStep(get().scene, get().currentStep, recipe) });
   },
   endLive(label) {
@@ -350,6 +355,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
     set({ currentStep: clampStep(get().scene, step) });
   },
   addStep() {
+    if (get().readOnly) return;
     const at = get().currentStep;
     get().commit(
       "addStep",
@@ -417,6 +423,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
   },
 
   replaceScene(scene, label) {
+    if (get().readOnly) return;
     const { scene: before, past } = get();
     set({
       scene,

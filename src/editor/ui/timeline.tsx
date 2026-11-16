@@ -18,6 +18,7 @@ export function Timeline() {
   const currentStep = useEditor((s) => s.currentStep);
   const { mode, step: playingStep, time, loop, speed, traces } = usePlayback();
   const count = frames?.length ?? 0;
+  const readOnly = useEditor((s) => s.readOnly);
   const previewing = mode !== "idle";
   const active = previewing ? playingStep : currentStep;
   const frame = currentStep >= 1 ? frames?.[currentStep - 1] : undefined;
@@ -63,14 +64,16 @@ export function Timeline() {
           </button>
         ))}
       </div>
-      <IconButton
-        icon={Plus}
-        label={t("addStep")}
-        disabled={previewing}
-        onClick={() => editor.addStep()}
-      />
+      {!readOnly && (
+        <IconButton
+          icon={Plus}
+          label={t("addStep")}
+          disabled={previewing}
+          onClick={() => editor.addStep()}
+        />
+      )}
 
-      {frame && !previewing && (
+      {frame && !previewing && !readOnly && (
         <>
           <label className="flex shrink-0 items-center gap-1.5 pl-1 text-sm text-muted-foreground">
             <span className="sr-only sm:not-sr-only">{t("duration")}</span>

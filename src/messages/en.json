@@ -396,7 +396,8 @@
         "people": "Figures",
         "pawns": "Pawns"
       }
-    }
+    },
+    "readOnly": "Read-only: you are a viewer in this club. You can present, play the animation, switch to 3D and export."
   },
   "dash": {
     "title": "My projects",
@@ -473,8 +474,18 @@
         "title": "Delete permanently",
         "body": "“{name}” will be erased for good, with all its boards. This cannot be undone.",
         "confirm": "Delete permanently"
+      },
+      "space": {
+        "title": "Change space",
+        "body": "“{name}” will leave its folder and be visible to all members of the chosen space.",
+        "confirm": "Move",
+        "field": "Space"
       }
-    }
+    },
+    "viewerHint": "Read-only in this club: open, present or copy to your space.",
+    "changeSpace": "Change space",
+    "copyToMine": "Copy to my space",
+    "personalSpace": "My personal space"
   },
   "sheet": {
     "open": "Session sheet",
@@ -573,7 +584,8 @@
       "behaviours": "Key behaviours and corrections",
       "page": "Page {n} of {total}",
       "animations": "Watch the animations: scan or open the link"
-    }
+    },
+    "readOnly": "Read-only: you are a viewer in this club. You can download the PDF."
   },
   "shared": {
     "title": "Shared session",
@@ -690,11 +702,97 @@
       "hint": "Replaces this board team's players with the squad, position by position, with names, numbers, photos and kit.",
       "player": "Squad player",
       "noPlayer": "None"
-    }
+    },
+    "personalSpace": "My personal space",
+    "space": "Space",
+    "spaceChanged": "Team moved. Photos came along.",
+    "viewerHint": "Read-only: you are a viewer in this club."
   },
   "appNav": {
     "label": "Workspace",
     "projects": "Projects",
-    "teams": "Squads"
+    "teams": "Squads",
+    "club": "Club",
+    "workspace": "Workspace",
+    "personal": "My personal space",
+    "newClub": "+ Create a club…",
+    "roles": {
+      "admin": "Admin",
+      "coach": "Coach",
+      "viewer": "Viewer"
+    },
+    "newClubTitle": "Create a club",
+    "newClubBody": "A shared space: projects, sessions and squads shared with your coaches. You will be its admin.",
+    "clubName": "Club name",
+    "create": "Create",
+    "cancel": "Cancel",
+    "close": "Close",
+    "error": "Could not create the club. Please try again."
+  },
+  "club": {
+    "title": "Club",
+    "loading": "Loading…",
+    "noClubTitle": "No club selected",
+    "noClubBody": "Pick a club in the workspace selector, or create one.",
+    "yourRole": "Your role: {role}",
+    "intro": "Everything created in this space (projects, folders, squads) is shared with the club members.",
+    "error": "The operation failed. Please try again.",
+    "lastAdmin": "The club must keep at least one admin: appoint another one first.",
+    "settings": "Settings",
+    "clubName": "Club name",
+    "members": "{count, plural, one {# member} other {# members}}",
+    "roleHelp": {
+      "admin": "manages the club, members and invites; edits everything.",
+      "coach": "creates and edits projects, sessions and squads.",
+      "viewer": "views, presents and copies to their space."
+    },
+    "you": "you",
+    "roleOf": "Role of {name}",
+    "remove": "Remove {name} from the club",
+    "invites": "Invite",
+    "invitesHelp": "Create a link and send it to the person (text, WhatsApp, email). Each link works once and expires after 14 days.",
+    "inviteRole": "Role",
+    "inviteLabel": "For whom (optional)",
+    "inviteLabelPlaceholder": "e.g. Julie, U13 assistant",
+    "createLink": "Create link",
+    "linkCreated": "Link created: copy it and send it.",
+    "unnamedInvite": "Invitation",
+    "expires": "Expires on {date}",
+    "linkFor": "Invite link: {name}",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "copyFailed": "Could not copy: select the link and copy it.",
+    "revoke": "Revoke",
+    "pastInvites": "{count, plural, one {# past invitation} other {# past invitations}}",
+    "statusUsed": "used",
+    "statusRevoked": "revoked",
+    "statusExpired": "expired",
+    "danger": "Leave or delete",
+    "leave": "Leave the club",
+    "leaveConfirm": "Leave “{name}”? You will lose access to its projects.",
+    "delete": "Delete the club",
+    "deleteConfirm": "Deleting “{name}” permanently erases all its projects, folders and squads. Type the club name to confirm.",
+    "deleteField": "Club name to confirm",
+    "cancel": "Cancel"
+  },
+  "invite": {
+    "title": "Invitation",
+    "loading": "Loading the invitation…",
+    "missingTitle": "Invitation not found",
+    "missingBody": "This link does not exist. Ask the club admin for a new one.",
+    "heading": "Join {club}",
+    "body": "You are invited as {role}.",
+    "alreadyMember": "You are already a member of this club.",
+    "status": {
+      "expired": "This link has expired. Ask the club admin for a new one.",
+      "used": "This link has already been used. Ask the club admin for a new one.",
+      "revoked": "This link has been revoked. Ask the club admin for a new one."
+    },
+    "signInFirst": "Sign in or create an account: you will come back here afterwards.",
+    "login": "Sign in",
+    "signup": "Create an account",
+    "join": "Join {club}",
+    "open": "Open the club",
+    "error": "Could not join the club. The link may no longer be valid."
   }
 }

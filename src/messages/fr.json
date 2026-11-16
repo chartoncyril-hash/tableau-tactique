@@ -396,7 +396,8 @@
         "people": "Personnages",
         "pawns": "Pions"
       }
-    }
+    },
+    "readOnly": "Lecture seule : vous êtes lecteur dans ce club. Vous pouvez présenter, lire l'animation, passer en 3D et exporter."
   },
   "dash": {
     "title": "Mes projets",
@@ -473,8 +474,18 @@
         "title": "Supprimer définitivement",
         "body": "« {name} » sera effacé pour de bon, avec tous ses tableaux. Cette action est irréversible.",
         "confirm": "Supprimer définitivement"
+      },
+      "space": {
+        "title": "Changer d'espace",
+        "body": "« {name} » quittera son dossier et sera visible de tous les membres de l'espace choisi.",
+        "confirm": "Déplacer",
+        "field": "Espace"
       }
-    }
+    },
+    "viewerHint": "Lecture seule dans ce club : ouvrez, présentez ou copiez dans votre espace.",
+    "changeSpace": "Changer d'espace",
+    "copyToMine": "Copier dans mon espace",
+    "personalSpace": "Mon espace personnel"
   },
   "sheet": {
     "open": "Fiche de séance",
@@ -573,7 +584,8 @@
       "behaviours": "Comportements recherchés et corrections",
       "page": "Page {n} sur {total}",
       "animations": "Voir les animations : scannez ou ouvrez le lien"
-    }
+    },
+    "readOnly": "Lecture seule : vous êtes lecteur dans ce club. Vous pouvez télécharger le PDF."
   },
   "shared": {
     "title": "Séance partagée",
@@ -690,11 +702,97 @@
       "hint": "Remplace les joueurs de cette équipe du tableau par l'effectif, poste par poste, avec noms, numéros, photos et maillot.",
       "player": "Joueur de l'effectif",
       "noPlayer": "Aucun"
-    }
+    },
+    "personalSpace": "Mon espace personnel",
+    "space": "Espace",
+    "spaceChanged": "Équipe déplacée. Les photos ont suivi.",
+    "viewerHint": "Lecture seule : vous êtes lecteur dans ce club."
   },
   "appNav": {
     "label": "Espace",
     "projects": "Projets",
-    "teams": "Effectifs"
+    "teams": "Effectifs",
+    "club": "Club",
+    "workspace": "Espace de travail",
+    "personal": "Mon espace personnel",
+    "newClub": "+ Créer un club…",
+    "roles": {
+      "admin": "Admin",
+      "coach": "Entraîneur",
+      "viewer": "Lecteur"
+    },
+    "newClubTitle": "Créer un club",
+    "newClubBody": "Un espace partagé : projets, séances et effectifs communs à vos entraîneurs. Vous en serez admin.",
+    "clubName": "Nom du club",
+    "create": "Créer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "error": "Création impossible. Réessayez."
+  },
+  "club": {
+    "title": "Club",
+    "loading": "Chargement…",
+    "noClubTitle": "Aucun club sélectionné",
+    "noClubBody": "Choisissez un club dans le sélecteur d'espace, ou créez-en un.",
+    "yourRole": "Votre rôle : {role}",
+    "intro": "Tout ce qui est créé dans cet espace (projets, dossiers, effectifs) est partagé avec les membres du club.",
+    "error": "L'opération a échoué. Réessayez.",
+    "lastAdmin": "Le club doit garder au moins un admin : nommez-en un autre avant.",
+    "settings": "Réglages",
+    "clubName": "Nom du club",
+    "members": "{count, plural, one {# membre} other {# membres}}",
+    "roleHelp": {
+      "admin": "gère le club, les membres et les invitations ; modifie tout.",
+      "coach": "crée et modifie projets, séances et effectifs.",
+      "viewer": "consulte, présente et copie dans son espace."
+    },
+    "you": "vous",
+    "roleOf": "Rôle de {name}",
+    "remove": "Retirer {name} du club",
+    "invites": "Inviter",
+    "invitesHelp": "Créez un lien et envoyez-le à la personne (SMS, WhatsApp, e-mail). Chaque lien sert une fois et expire après 14 jours.",
+    "inviteRole": "Rôle",
+    "inviteLabel": "Pour qui (facultatif)",
+    "inviteLabelPlaceholder": "ex. Julie, adjointe U13",
+    "createLink": "Créer le lien",
+    "linkCreated": "Lien créé : copiez-le et envoyez-le.",
+    "unnamedInvite": "Invitation",
+    "expires": "Expire le {date}",
+    "linkFor": "Lien d'invitation : {name}",
+    "copy": "Copier le lien",
+    "copied": "Copié",
+    "copyFailed": "Copie impossible : sélectionnez le lien et copiez-le.",
+    "revoke": "Révoquer",
+    "pastInvites": "{count, plural, one {# ancienne invitation} other {# anciennes invitations}}",
+    "statusUsed": "utilisée",
+    "statusRevoked": "révoquée",
+    "statusExpired": "expirée",
+    "danger": "Quitter ou supprimer",
+    "leave": "Quitter le club",
+    "leaveConfirm": "Quitter « {name} » ? Vous n'aurez plus accès à ses projets.",
+    "delete": "Supprimer le club",
+    "deleteConfirm": "Supprimer « {name} » efface définitivement tous ses projets, dossiers et effectifs. Tapez le nom du club pour confirmer.",
+    "deleteField": "Nom du club à confirmer",
+    "cancel": "Annuler"
+  },
+  "invite": {
+    "title": "Invitation",
+    "loading": "Chargement de l'invitation…",
+    "missingTitle": "Invitation introuvable",
+    "missingBody": "Ce lien n'existe pas. Demandez un nouveau lien à l'admin du club.",
+    "heading": "Rejoindre {club}",
+    "body": "Vous êtes invité comme {role}.",
+    "alreadyMember": "Vous êtes déjà membre de ce club.",
+    "status": {
+      "expired": "Ce lien a expiré. Demandez un nouveau lien à l'admin du club.",
+      "used": "Ce lien a déjà été utilisé. Demandez un nouveau lien à l'admin du club.",
+      "revoked": "Ce lien a été révoqué. Demandez un nouveau lien à l'admin du club."
+    },
+    "signInFirst": "Connectez-vous ou créez un compte : vous reviendrez ici ensuite.",
+    "login": "Se connecter",
+    "signup": "Créer un compte",
+    "join": "Rejoindre {club}",
+    "open": "Ouvrir le club",
+    "error": "Impossible de rejoindre le club. Le lien n'est peut-être plus valable."
   }
 }

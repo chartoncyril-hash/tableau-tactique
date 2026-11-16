@@ -3,13 +3,18 @@ import { createClient } from "@/lib/supabase/client";
 import type { BoardRow, FolderRow, ProjectFilter, ProjectRow, SharedProject, ShareRow, VersionMeta } from "./types";
 
 /**
- * Accès aux données depuis le navigateur. La RLS limite chaque requête aux lignes de
- * l'utilisateur connecté ; ces fonctions ne filtrent jamais par propriétaire elles-mêmes.
+ * Accès aux données depuis le navigateur. La RLS limite chaque requête aux lignes que
+ * l'utilisateur peut voir (les siennes et celles de ses clubs) ; ces fonctions ne filtrent
+ * jamais par propriétaire, seulement par espace (`clubId` nul = espace personnel).
  */
+export function inScope<Q>(query: Q, clubId: string | null): Q {
+  const q = query as unknown as { is: (c: string, v: null) => Q; eq: (c: string, v: string) => Q };
+  return clubId ? q.eq("club_id", clubId) : q.is("club_id", null);
+}
 let client: ReturnType<typeof createClient> | undefined;
 const db = () => (client ??= createClient());
 
-const PROJECT_COLS = "id,name,folder_id,tags,favorite,is_template,sheet,created_at,updated_at,deleted_at";
+const PROJECT_COLS = "id,name,folder_id,club_id,tags,favorite,is_template,sheet,created_at,updated_at,deleted_at";
 const BOARD_COLS = "id,project_id,position,name,notes,video_url,sheet,scene";
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
@@ -19,12 +24,12 @@ function unwrap<T>(result: { data: T | null; error: { message: string } | null }
 
 // --- Dossiers ----------------------------------------------------------------
 
-export async function listFolders(): Promise<FolderRow[]> {
-  return unwrap(await db().from("folders").select("id,name").is("deleted_at", null).order("name"));
+export async function listFolders(clubId: string | null): Promise<FolderRow[]> {
+  return unwrap(await inScope(db().from("folders").select("id,name").is("deleted_at", null), clubId).order("name"));
 }
 
-export async function createFolder(name: string): Promise<FolderRow> {
-  return unwrap(await db().from("folders").insert({ name }).select("id,name").single());
+export async function createFolder(name: string, clubId: string | null): Promise<FolderRow> {
+  return unwrap(await db().from("folders").insert({ name, club_id: clubId }).select("id,name").single());
 }
 
 export async function renameFolder(id: string, name: string) {
@@ -42,8 +47,8 @@ export async function trashFolder(id: string) {
 
 // --- Projets -----------------------------------------------------------------
 
-export async function listProjects(filter: ProjectFilter): Promise<ProjectRow[]> {
-  let query = db().from("projects").select(PROJECT_COLS);
+export async function listProjects(filter: ProjectFilter, clubId: string | null): Promise<ProjectRow[]> {
+  let query = inScope(db().from("projects").select(PROJECT_COLS), clubId);
   if (filter.kind === "trash") {
     query = query.not("deleted_at", "is", null);
   } else {
@@ -56,11 +61,11 @@ export async function listProjects(filter: ProjectFilter): Promise<ProjectRow[]>
   return unwrap(await query.order("updated_at", { ascending: false }).limit(200));
 }
 
-export async function searchProjects(q: string): Promise<ProjectRow[]> {
+export async function searchProjects(q: string, clubId: string | null): Promise<ProjectRow[]> {
   // % et _ sont des jokers pour ILIKE : on les neutralise dans la saisie.
   const safe = q.replace(/[%_\\]/g, " ").trim();
   if (!safe) return [];
-  return unwrap(await db().rpc("search_projects", { q: safe }));
+  return unwrap(await db().rpc("search_projects", { q: safe, p_club: clubId }));
 }
 
 export async function createProject(
@@ -68,6 +73,7 @@ export async function createProject(
   boardName: string,
   scene: Scene,
   folderId: string | null,
+  clubId: string | null,
 ): Promise<string> {
   return unwrap(
     await db().rpc("create_project", {
@@ -75,19 +81,28 @@ export async function createProject(
       p_board_name: boardName,
       p_scene: scene,
       p_folder: folderId,
+      p_club: clubId,
     }),
   );
 }
 
 export async function updateProject(
   id: string,
-  patch: Partial<Pick<ProjectRow, "name" | "folder_id" | "tags" | "favorite" | "is_template" | "deleted_at" | "sheet">>,
+  patch: Partial<Pick<ProjectRow, "name" | "folder_id" | "club_id" | "tags" | "favorite" | "is_template" | "deleted_at" | "sheet">>,
 ) {
   unwrap(await db().from("projects").update(patch).eq("id", id).select("id"));
 }
 
-export async function duplicateProject(id: string, name: string, asTemplate: boolean): Promise<string> {
-  return unwrap(await db().rpc("duplicate_project", { p_id: id, p_name: name, p_as_template: asTemplate }));
+/** Copie vers l'espace indiqué (par défaut celui du projet). */
+export async function duplicateProject(id: string, name: string, asTemplate: boolean, clubId: string | null): Promise<string> {
+  return unwrap(
+    await db().rpc("duplicate_project", { p_id: id, p_name: name, p_as_template: asTemplate, p_club: clubId }),
+  );
+}
+
+/** Range un projet dans un autre espace (il quitte son dossier). */
+export async function moveProject(id: string, clubId: string | null) {
+  unwrap(await db().from("projects").update({ club_id: clubId, folder_id: null }).eq("id", id).select("id"));
 }
 
 export async function purgeProject(id: string) {
