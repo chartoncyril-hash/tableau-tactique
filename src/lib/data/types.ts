@@ -1,4 +1,5 @@
 import type { Scene } from "@/editor/scene/types";
+import type { DrillSheet, SessionSheet } from "@/lib/sheet";
 
 export interface FolderRow {
   id: string;
@@ -12,6 +13,7 @@ export interface ProjectRow {
   tags: string[];
   favorite: boolean;
   is_template: boolean;
+  sheet: SessionSheet;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -24,7 +26,22 @@ export interface BoardRow {
   name: string;
   notes: string;
   video_url: string | null;
+  sheet: DrillSheet;
   scene: Scene;
+}
+
+export interface ShareRow {
+  id: string;
+  token: string;
+  created_at: string;
+}
+
+/** Projet tel que vu par un lien public. */
+export interface SharedProject {
+  name: string;
+  sheet: SessionSheet;
+  updated_at: string;
+  boards: Pick<BoardRow, "id" | "name" | "notes" | "video_url" | "sheet" | "scene">[];
 }
 
 export interface VersionMeta {

@@ -1,6 +1,6 @@
 import type { Scene } from "@/editor/scene/types";
 import { createClient } from "@/lib/supabase/client";
-import type { BoardRow, FolderRow, ProjectFilter, ProjectRow, VersionMeta } from "./types";
+import type { BoardRow, FolderRow, ProjectFilter, ProjectRow, SharedProject, ShareRow, VersionMeta } from "./types";
 
 /**
  * Accès aux données depuis le navigateur. La RLS limite chaque requête aux lignes de
@@ -9,8 +9,8 @@ import type { BoardRow, FolderRow, ProjectFilter, ProjectRow, VersionMeta } from
 let client: ReturnType<typeof createClient> | undefined;
 const db = () => (client ??= createClient());
 
-const PROJECT_COLS = "id,name,folder_id,tags,favorite,is_template,created_at,updated_at,deleted_at";
-const BOARD_COLS = "id,project_id,position,name,notes,video_url,scene";
+const PROJECT_COLS = "id,name,folder_id,tags,favorite,is_template,sheet,created_at,updated_at,deleted_at";
+const BOARD_COLS = "id,project_id,position,name,notes,video_url,sheet,scene";
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
@@ -81,7 +81,7 @@ export async function createProject(
 
 export async function updateProject(
   id: string,
-  patch: Partial<Pick<ProjectRow, "name" | "folder_id" | "tags" | "favorite" | "is_template" | "deleted_at">>,
+  patch: Partial<Pick<ProjectRow, "name" | "folder_id" | "tags" | "favorite" | "is_template" | "deleted_at" | "sheet">>,
 ) {
   unwrap(await db().from("projects").update(patch).eq("id", id).select("id"));
 }
@@ -115,7 +115,7 @@ export async function insertBoard(
 
 export async function updateBoard(
   id: string,
-  patch: Partial<Pick<BoardRow, "name" | "notes" | "video_url" | "scene" | "position">> & { deleted_at?: string },
+  patch: Partial<Pick<BoardRow, "name" | "notes" | "video_url" | "scene" | "position" | "sheet">> & { deleted_at?: string },
 ) {
   unwrap(await db().from("boards").update(patch).eq("id", id).select("id"));
 }
@@ -142,4 +142,33 @@ export async function loadVersionScene(id: string): Promise<Scene | null> {
     scene: Scene;
   }[];
   return rows[0]?.scene ?? null;
+}
+
+// --- Liens publics -----------------------------------------------------------
+
+export async function activeShare(projectId: string): Promise<ShareRow | null> {
+  const rows = unwrap(
+    await db()
+      .from("shares")
+      .select("id,token,created_at")
+      .eq("project_id", projectId)
+      .is("revoked_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ) as ShareRow[];
+  return rows[0] ?? null;
+}
+
+export async function createShare(projectId: string): Promise<ShareRow> {
+  return unwrap(await db().from("shares").insert({ project_id: projectId }).select("id,token,created_at").single());
+}
+
+export async function revokeShare(id: string) {
+  unwrap(await db().from("shares").update({ revoked_at: new Date().toISOString() }).eq("id", id).select("id"));
+}
+
+/** Lecture publique, sans compte : seul un jeton valide et actif renvoie quelque chose. */
+export async function loadSharedProject(token: string): Promise<SharedProject | null> {
+  if (!/^[0-9a-f]{32}$/.test(token)) return null;
+  return (unwrap(await db().rpc("get_shared_project", { p_token: token })) as SharedProject | null) ?? null;
 }
