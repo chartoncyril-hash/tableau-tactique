@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { SiteHeader } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
-import { redirect } from "@/i18n/navigation";
+import { buttonVariants } from "@/components/ui/button";
+import { Link, redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({
@@ -30,8 +31,12 @@ async function Workspace({ locale }: { locale: string }) {
         {t("welcome", { email: data.user.email ?? "" })}
       </p>
       <p className="text-muted-foreground">{t("empty")}</p>
-      <p className="text-sm text-muted-foreground">{t("nextStep")}</p>
-      <LogoutButton />
+      <div className="flex flex-wrap gap-3">
+        <Link href="/editor" className={buttonVariants()}>
+          {t("openEditor")}
+        </Link>
+        <LogoutButton />
+      </div>
     </Card>
   );
 }

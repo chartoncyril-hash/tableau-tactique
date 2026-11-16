@@ -19,15 +19,34 @@
     "pitchLabel": "Illustration d'un terrain de football avec deux équipes et des flèches de déplacement",
     "featuresTitle": "Pensé pour le bord du terrain",
     "features": {
-      "editor": { "title": "Éditeur 2D complet", "body": "Joueurs, matériel, tracés et zones, avec annulation illimitée." },
-      "animation": { "title": "Animation par images clés", "body": "Faites vivre un coup de pied arrêté en quelques minutes." },
-      "sync": { "title": "Synchronisation instantanée", "body": "Un seul compte sur tous vos appareils, sans licence par machine." },
-      "share": { "title": "Partage par lien", "body": "Envoyez un schéma animé à vos joueurs, lisible sans compte." },
-      "sessions": { "title": "Planification de séances", "body": "Assemblez vos exercices en séance et exportez un PDF propre." },
-      "touch": { "title": "Tactile et stylet", "body": "Utilisable au doigt sur tablette, même au bord du terrain." }
+      "editor": {
+        "title": "Éditeur 2D complet",
+        "body": "Joueurs, matériel, tracés et zones, avec annulation illimitée."
+      },
+      "animation": {
+        "title": "Animation par images clés",
+        "body": "Faites vivre un coup de pied arrêté en quelques minutes."
+      },
+      "sync": {
+        "title": "Synchronisation instantanée",
+        "body": "Un seul compte sur tous vos appareils, sans licence par machine."
+      },
+      "share": {
+        "title": "Partage par lien",
+        "body": "Envoyez un schéma animé à vos joueurs, lisible sans compte."
+      },
+      "sessions": {
+        "title": "Planification de séances",
+        "body": "Assemblez vos exercices en séance et exportez un PDF propre."
+      },
+      "touch": {
+        "title": "Tactile et stylet",
+        "body": "Utilisable au doigt sur tablette, même au bord du terrain."
+      }
     },
-    "roadmapNote": "Les fonctions arrivent par étapes : le compte et l'espace personnel sont déjà disponibles, l'éditeur suit.",
-    "footer": "Produit indépendant, en développement."
+    "roadmapNote": "L'éditeur 2D est disponible en démonstration, sans inscription. La sauvegarde en ligne et l'animation suivent.",
+    "footer": "Produit indépendant, en développement.",
+    "tryEditor": "Essayer l'éditeur"
   },
   "auth": {
     "loginTitle": "Connexion",
@@ -53,7 +72,199 @@
   "app": {
     "title": "Mon espace",
     "welcome": "Bienvenue, {email}",
-    "empty": "Vos projets apparaîtront ici dès que l'éditeur sera disponible.",
-    "nextStep": "Prochaine étape : l'éditeur 2D."
+    "empty": "La sauvegarde de vos projets en ligne arrive à l'étape suivante. En attendant, l'éditeur garde un brouillon sur cet appareil.",
+    "openEditor": "Ouvrir l'éditeur"
+  },
+  "editor": {
+    "title": "Éditeur",
+    "back": "Retour à l'accueil",
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "fit": "Ajuster à l'écran",
+    "properties": "Propriétés",
+    "close": "Fermer",
+    "toolbarLabel": "Outils",
+    "objects": "{count, plural, =0 {Aucun objet} one {# objet} other {# objets}}",
+    "newText": "Texte",
+    "teamDefault": "Équipe {letter}",
+    "tools": {
+      "select": "Sélection (V)",
+      "pan": "Déplacer la vue (H)",
+      "player": "Joueur (P)",
+      "goalkeeper": "Gardien (K)",
+      "ball": "Ballon (B)",
+      "equipment": "Banque d'objets (C)",
+      "zone": "Zone (Z)",
+      "line": "Tracé (L)",
+      "freehand": "Main levée (D)",
+      "text": "Texte",
+      "label": "Étiquette",
+      "eraser": "Gomme (E)"
+    },
+    "equipment": {
+      "cone": "Cône",
+      "marker": "Coupelle",
+      "pole": "Piquet",
+      "flag": "Drapeau",
+      "ring": "Cerceau",
+      "hurdle": "Haie",
+      "ladder": "Échelle de rythme",
+      "grid": "Carré d'agilité",
+      "mannequin": "Mannequin",
+      "wall": "Mur de mannequins",
+      "minigoal": "Mini-but",
+      "goal5": "But à 8",
+      "goal": "But à 11",
+      "rebounder": "Filet de rebond",
+      "mat": "Tapis",
+      "bench": "Banc",
+      "box": "Caisson de saut",
+      "bosu": "Demi-ballon d'équilibre",
+      "dumbbell": "Haltère",
+      "bib": "Chasuble"
+    },
+    "zones": {
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "polygon": "Polygone",
+      "hatch": "Hachures"
+    },
+    "lines": {
+      "pass": "Passe",
+      "run": "Course",
+      "dribble": "Conduite",
+      "shot": "Tir",
+      "free": "Ligne libre",
+      "block": "Blocage"
+    },
+    "looks": {
+      "disc": "Pastille",
+      "jersey": "Maillot"
+    },
+    "panel": {
+      "selection": "{count, plural, one {# objet sélectionné} other {# objets sélectionnés}}",
+      "pitch": "Terrain",
+      "teams": "Équipes",
+      "analysis": "Analyse",
+      "board": "Tableau",
+      "view": "Cadrage",
+      "views": {
+        "full": "Terrain entier",
+        "half": "Demi-terrain",
+        "third": "Dernier tiers",
+        "box": "Surface",
+        "blank": "Terrain vierge"
+      },
+      "orientation": "Orientation",
+      "horizontal": "Horizontale",
+      "vertical": "Verticale",
+      "mow": "Tonte",
+      "mows": {
+        "stripes": "Bandes",
+        "checker": "Damier",
+        "plain": "Unie"
+      },
+      "presets": "Thèmes",
+      "presetNames": {
+        "green": "Vert",
+        "dark": "Vert foncé",
+        "blue": "Bleu",
+        "board": "Tableau blanc",
+        "night": "Nuit"
+      },
+      "grass": "Couleur du terrain",
+      "linesColor": "Couleur des lignes",
+      "teamName": "Nom de l'équipe",
+      "addTeam": "Ajouter une équipe",
+      "removeTeam": "Supprimer l'équipe",
+      "formation": "Formation",
+      "applyFormation": "Placer {team}",
+      "voronoi": "Zones d'influence (Voronoï)",
+      "blockLines": "Lignes de bloc et distances",
+      "number": "Numéro",
+      "name": "Nom",
+      "role": "Poste",
+      "team": "Équipe",
+      "look": "Apparence",
+      "isGoalkeeper": "Gardien de but",
+      "kind": "Type",
+      "color": "Couleur",
+      "width": "Épaisseur",
+      "dashed": "Pointillés",
+      "wavy": "Ondulé",
+      "curved": "Courbe",
+      "arrowStart": "Flèche au départ",
+      "arrowEnd": "Flèche à l'arrivée",
+      "fill": "Remplissage",
+      "opacity": "Opacité",
+      "text": "Texte",
+      "size": "Taille",
+      "asLabel": "Fond d'étiquette",
+      "scale": "Échelle",
+      "alignLeft": "Aligner à gauche",
+      "alignCenterX": "Centrer horizontalement",
+      "alignRight": "Aligner à droite",
+      "alignTop": "Aligner en haut",
+      "alignCenterY": "Centrer verticalement",
+      "alignBottom": "Aligner en bas",
+      "distributeX": "Répartir horizontalement",
+      "distributeY": "Répartir verticalement",
+      "group": "Grouper (Ctrl+G)",
+      "ungroup": "Dégrouper",
+      "lock": "Verrouiller",
+      "unlock": "Déverrouiller",
+      "front": "Premier plan",
+      "back": "Arrière-plan",
+      "duplicate": "Dupliquer (Ctrl+D)",
+      "delete": "Supprimer",
+      "clear": "Vider le tableau",
+      "localSave": "Brouillon enregistré sur cet appareil. La sauvegarde en ligne arrive à l'étape suivante.",
+      "ink": "Couleur",
+      "polygonHint": "Touchez pour poser les sommets, puis touchez deux fois pour fermer.",
+      "double": "Double trait",
+      "barEnd": "Extrémité en T",
+      "pattern": "Motif",
+      "patterns": {
+        "solid": "Plein",
+        "hatch": "Hachures"
+      },
+      "isCaptain": "Capitaine",
+      "color2": "Seconde couleur",
+      "teamPattern": "Motif du maillot",
+      "teamPatterns": {
+        "plain": "Uni",
+        "stripes": "Rayures",
+        "hoops": "Cerclé",
+        "halves": "Mi-parti"
+      }
+    },
+    "bank": {
+      "categories": {
+        "balls": "Ballons",
+        "cones": "Cônes et piquets",
+        "agility": "Agilité",
+        "goals": "Buts",
+        "mannequins": "Mannequins",
+        "fitness": "Préparation"
+      },
+      "balls": {
+        "classic": "Ballon classique",
+        "blue": "Ballon bleu",
+        "red": "Ballon rouge",
+        "yellow": "Ballon jaune",
+        "futsal": "Ballon de futsal",
+        "rugby": "Ballon de rugby",
+        "volley": "Ballon de volley",
+        "tennis": "Balle de tennis",
+        "medicine": "Médecine-ball"
+      }
+    },
+    "widths": {
+      "thin": "Trait fin",
+      "medium": "Trait moyen",
+      "thick": "Trait épais"
+    }
   }
 }

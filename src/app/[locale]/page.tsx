@@ -47,10 +47,10 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 {t("cta")}
               </Link>
               <Link
-                href="/login"
+                href="/editor"
                 className={buttonVariants({ size: "lg", variant: "outline" })}
               >
-                {t("secondaryCta")}
+                {t("tryEditor")}
               </Link>
             </div>
           </div>

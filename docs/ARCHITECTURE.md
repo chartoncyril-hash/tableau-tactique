@@ -1,6 +1,6 @@
 # Architecture
 
-État à la fin de la phase 1 (socle). Mis à jour à chaque phase.
+État à la fin de la phase 2 (éditeur 2D). Mis à jour à chaque phase.
 
 ## Pile technique
 
@@ -28,6 +28,24 @@ src/
 supabase/migrations/   schéma versionné
 e2e/                   parcours Playwright
 ```
+
+## Éditeur 2D (`src/editor`)
+
+```
+scene/      format de scène, géométrie pure, formations (testés avec Vitest)
+pitches/    un fichier de définition par sport + registre
+store.ts    état Zustand ; toute modification passe par `commit`
+canvas/     rendu Konva : terrain, analyse, objets, sélection (4 calques)
+ui/         barre d'outils, barre du haut, panneau de propriétés
+```
+
+- **Historique** : chaque commande enregistre la scène avant et après. Immer partage la
+  structure entre les deux, donc l'historique est illimité sans copie complète. Les gestes
+  continus (poignées, curseurs de couleur) sont fusionnés en une seule commande.
+- **Performance** : pendant un glisser, les nœuds Konva sont déplacés directement, React n'est
+  sollicité qu'au relâchement. Chaque objet est un composant mémoïsé. Le calque du terrain
+  n'écoute aucun événement.
+- **Chargement** : Konva est importé dynamiquement, hors rendu serveur (`editor-loader.tsx`).
 
 ## Règles propres à Next.js 16
 
