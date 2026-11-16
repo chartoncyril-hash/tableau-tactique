@@ -63,3 +63,8 @@ test("une mauvaise connexion affiche une erreur", async ({ page }) => {
     page.getByText("E-mail ou mot de passe incorrect."),
   ).toBeVisible();
 });
+
+test("un lien de connexion expiré affiche un message", async ({ page }) => {
+  await page.goto("/fr/login?error=callback");
+  await expect(page.getByText("Le lien de connexion est invalide ou a expiré.")).toBeVisible();
+});

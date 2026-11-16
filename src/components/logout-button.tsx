@@ -15,8 +15,8 @@ export function LogoutButton() {
   async function onClick() {
     setPending(true);
     await createClient().auth.signOut();
+    // Pas de refresh juste après : il peut annuler la navigation. La page cible est rendue à la requête.
     router.replace("/");
-    router.refresh();
   }
 
   return (
