@@ -40,6 +40,8 @@ export function ExportShare() {
     const source = sessionSnapshot();
     if (!source) return;
     setBusy("pdf");
+    // Le PDF part du navigateur, mais on enregistre au passage ce qui est en attente.
+    void flush();
     setError(null);
     try {
       // Avec un lien actif, la fiche porte son QR code vers les animations.

@@ -134,3 +134,16 @@ test("la fiche se remplit et se réorganise dans l'app", async ({ page }, info) 
   await third.getByRole("button", { name: "Confirmer la suppression" }).click();
   await expect(page.getByRole("article")).toHaveCount(2);
 });
+
+test("une saisie faite juste avant de quitter la fiche n'est pas perdue", async ({ page }, info) => {
+  await login(page, info);
+  await page.getByRole("link", { name: "Fiche de séance" }).click();
+  await page.getByLabel("Thème de séance", { exact: true }).fill("Pressing haut");
+  // On quitte aussitôt, sans attendre l'enregistrement différé.
+  await page.getByRole("link", { name: "Retour à l'éditeur" }).click();
+  await expect(page.getByTestId("editor-canvas").locator("canvas").first()).toBeVisible();
+  await page.reload();
+  await page.getByRole("link", { name: "Fiche de séance" }).click();
+  await expect(page.getByLabel("Thème de séance", { exact: true })).toHaveValue("Pressing haut");
+});
+
