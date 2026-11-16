@@ -112,3 +112,52 @@ test("orienter les joueurs depuis le panneau", async ({ page }) => {
     expect(page.getByRole("checkbox", { name: /Montrer l'orientation des joueurs/ })).not.toBeChecked(),
   );
 });
+
+test("déplacer un joueur en le faisant glisser dans la vue 3D, puis annuler", async ({ page }) => {
+  await openEditor(page);
+  // Un joueur au centre du terrain : il sera au centre de la vue 3D « Dessus ».
+  await page.getByRole("button", { name: "Joueur (P)" }).click();
+  const canvas2d = page.getByTestId("editor-canvas");
+  const b2 = (await canvas2d.boundingBox())!;
+  await canvas2d.click({ position: { x: b2.width / 2, y: b2.height / 2 } });
+  await expect(page.getByTestId("object-count")).toHaveText("1 objet");
+  await page.getByRole("button", { name: "Sélection (V)" }).click();
+
+  await page.getByRole("button", { name: "Vue 3D" }).click();
+  await expect(view(page)).toHaveAttribute("data-ready", "true", { timeout: 30_000 });
+  await page.getByRole("radiogroup", { name: "Point de vue" }).getByRole("radio", { name: "Dessus" }).click();
+  await page.waitForTimeout(1200);
+  const canvas = view(page).locator("canvas");
+  const box = (await canvas.boundingBox())!;
+  const before = await canvas.screenshot();
+
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 40, y + 20, { steps: 5 });
+  await page.mouse.move(x + 110, y + 50, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  const moved = await canvas.screenshot();
+  expect(moved.equals(before)).toBe(false);
+
+  // Le déplacement entre dans l'historique : annuler remet le joueur à sa place.
+  await page.keyboard.press("Control+z");
+  await page.waitForTimeout(400);
+  await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(true);
+  await expect(page.getByTestId("object-count")).toHaveText("1 objet");
+});
+
+test("les zones d'influence s'affichent aussi en 3D", async ({ page }) => {
+  await openEditor(page);
+  await withPanel(page, () => page.getByRole("button", { name: "Placer Équipe A" }).click());
+  await page.getByRole("button", { name: "Vue 3D" }).click();
+  await expect(view(page)).toHaveAttribute("data-ready", "true", { timeout: 30_000 });
+  await page.getByRole("radiogroup", { name: "Point de vue" }).getByRole("radio", { name: "Dessus" }).click();
+  await page.waitForTimeout(1200);
+  const canvas = view(page).locator("canvas");
+  const plain = await canvas.screenshot();
+  await withPanel(page, () => page.getByRole("checkbox", { name: "Zones d'influence (Voronoï)" }).check());
+  await expect.poll(async () => (await canvas.screenshot()).equals(plain), { timeout: 10_000 }).toBe(false);
+});

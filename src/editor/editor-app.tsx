@@ -130,7 +130,7 @@ export default function EditorApp({ projectId, boardId }: { projectId?: string; 
         e.preventDefault();
         return;
       }
-      // Vue 3D en lecture : seuls annuler / rétablir et Échap (retour en 2D) restent actifs.
+      // Vue 3D : seuls annuler / rétablir et Échap (retour en 2D) passent par le clavier.
       if (useView3d.getState().mode === "3d") {
         if (e.key === "Escape") setViewMode("2d");
         else if (mod && e.key.toLowerCase() === "z") (e.shiftKey ? s.redo : s.undo)();

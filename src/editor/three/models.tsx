@@ -16,7 +16,8 @@ import { jerseyTexture, kitTexture, labelTexture, primsTexture } from "./texture
 const WHITE = "#f8fafc";
 /** Agrandissement des joueurs et du petit matériel, comme les jetons du tableau 2D. */
 export const PLAYER_SCALE = 1.8;
-const PROP_SCALE = 1.6;
+/** Même agrandissement que les personnages : le matériel garde ses proportions réelles à côté d'eux. */
+const PROP_SCALE = 1.65;
 const STEEL = "#9ca3af";
 
 export const BALL_RADIUS = 0.34;
@@ -345,27 +346,43 @@ export function Equipment3D({ obj }: { obj: EquipmentObject }) {
   );
 }
 
-const SOLID = new Set(["cone", "pole", "flag", "hurdle", "mannequin", "wall", "rebounder", "bench", "box", "bosu", "goal", "goal5", "minigoal"]);
+const SOLID = new Set(["cone", "marker", "ring", "pole", "flag", "hurdle", "mannequin", "wall", "rebounder", "bench", "box", "bosu", "goal", "goal5", "minigoal"]);
 
 function EquipmentModel({ obj }: { obj: EquipmentObject }) {
   const c = obj.color;
   switch (obj.kind) {
     case "cone":
+      // Plot d'entraînement : environ 30 cm de haut sur une base de 28 cm.
       return (
         <>
-          <mesh position-y={0.03} castShadow>
-            <boxGeometry args={[0.95, 0.06, 0.95]} />
+          <mesh position-y={0.012} castShadow>
+            <boxGeometry args={[0.28, 0.024, 0.28]} />
             <Mat color={c} />
           </mesh>
-          <mesh position-y={0.5} castShadow>
-            <coneGeometry args={[0.36, 0.9, 24]} />
+          <mesh position-y={0.165} castShadow>
+            <coneGeometry args={[0.1, 0.3, 20]} />
             <Mat color={c} />
           </mesh>
-          <mesh position-y={0.52}>
-            <cylinderGeometry args={[0.2, 0.25, 0.14, 24, 1, true]} />
+          <mesh position-y={0.2}>
+            <cylinderGeometry args={[0.054, 0.066, 0.05, 20, 1, true]} />
             <Mat color={WHITE} />
           </mesh>
         </>
+      );
+    case "marker":
+      // Coupelle plate : 20 cm de diamètre, percée au centre.
+      return (
+        <mesh position-y={0.025} castShadow>
+          <cylinderGeometry args={[0.035, 0.1, 0.05, 24, 1, true]} />
+          <Mat color={c} opacity={1} />
+        </mesh>
+      );
+    case "ring":
+      return (
+        <mesh position-y={0.02} rotation-x={Math.PI / 2}>
+          <torusGeometry args={[0.32, 0.02, 8, 32]} />
+          <Mat color={c} />
+        </mesh>
       );
     case "pole":
       return (

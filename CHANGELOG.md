@@ -1,5 +1,14 @@
 # Journal des modifications
 
+## Améliorations de la vue 3D
+
+- Zones d'influence et lignes de bloc (avec les écarts entre lignes) affichées au sol en 3D,
+  comme en 2D ; calcul partagé (`src/editor/scene/analysis.ts`).
+- Plots, coupelles et cerceaux à taille réaliste (plot : 30 cm), dans les mêmes proportions que
+  les personnages.
+- Joueurs, ballons et matériel se déplacent en les faisant glisser dans la vue 3D (zone de prise
+  élargie, bornée au terrain) ; le déplacement s'annule comme en 2D et suit l'étape affichée.
+
 ## Phase 9a — Espaces club
 
 - Sélecteur d'espace dans l'en-tête : « Mon espace personnel » ou un club. Projets, dossiers,
