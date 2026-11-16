@@ -3,11 +3,15 @@
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { canvasApi, EditorCanvas } from "./canvas/editor-canvas";
+import { closeProject, openProject, useProject } from "./project-session";
 import { createScene, migrateScene } from "./scene/defaults";
 import type { SceneObject } from "./scene/types";
 import { newId, useEditor, type Tool } from "./store";
+import { BoardTabs } from "./ui/board-tabs";
 import { IconButton } from "./ui/controls";
 import { Panel } from "./ui/panel";
 import { Toolbar } from "./ui/toolbar";
@@ -45,13 +49,22 @@ function stressObjects(count: number): SceneObject[] {
   }));
 }
 
-export default function EditorApp() {
+export default function EditorApp({ projectId }: { projectId?: string }) {
   const t = useTranslations("editor");
   const ready = useEditor((s) => s.hydrated);
   const [panelOpen, setPanelOpen] = useState(false);
+  const projectStatus = useProject((s) => s.status);
+
+  // Projet enregistré : la session gère le chargement et la sauvegarde en ligne.
+  useEffect(() => {
+    if (!projectId) return;
+    void openProject(projectId);
+    return closeProject;
+  }, [projectId]);
 
   // Chargement initial puis sauvegarde locale différée (la persistance en ligne arrive en phase 3).
   useEffect(() => {
+    if (projectId) return;
     const names: [string, string] = [t("teamDefault", { letter: "A" }), t("teamDefault", { letter: "B" })];
     const stress = Number(new URLSearchParams(window.location.search).get("stress"));
     let scene = createScene(names);
@@ -85,7 +98,7 @@ export default function EditorApp() {
       clearTimeout(timer);
       unsubscribe();
     };
-  }, [t]);
+  }, [t, projectId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -137,9 +150,26 @@ export default function EditorApp() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  if (projectId && (projectStatus === "missing" || projectStatus === "error")) {
+    return (
+      <main className="flex h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
+        <h1 className="text-xl font-semibold">
+          {t(projectStatus === "missing" ? "project.missingTitle" : "project.errorTitle")}
+        </h1>
+        <p className="max-w-sm text-muted-foreground">
+          {t(projectStatus === "missing" ? "project.missingBody" : "project.errorBody")}
+        </p>
+        <Link href="/app" className={buttonVariants()}>
+          {t("project.backToProjects")}
+        </Link>
+      </main>
+    );
+  }
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <TopBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
+      <TopBar project={!!projectId} panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
+      {projectId && projectStatus === "ready" && <BoardTabs />}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Toolbar />
         <main className="relative min-h-0 min-w-0 flex-1">

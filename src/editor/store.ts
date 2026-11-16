@@ -74,6 +74,8 @@ export interface EditorState {
   undo: () => void;
   redo: () => void;
   loadScene: (scene: Scene) => void;
+  /** Remplace toute la scène en gardant l'historique (restauration d'une version). */
+  replaceScene: (scene: Scene, label: string) => void;
 
   setTool: (tool: Tool) => void;
   setActiveTeam: (id: string) => void;
@@ -247,6 +249,17 @@ export const useEditor = create<EditorState>()((set, get) => ({
       selection: [],
       liveBase: null,
       activeTeamId: scene.teams[0]?.id ?? "team-a",
+    });
+  },
+
+  replaceScene(scene, label) {
+    const { scene: before, past } = get();
+    set({
+      scene,
+      past: [...past, { label, before, after: scene, time: Date.now() }],
+      future: [],
+      selection: [],
+      liveBase: null,
     });
   },
 

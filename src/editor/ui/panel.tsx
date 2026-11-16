@@ -33,7 +33,9 @@ import {
   type SceneObject,
   type TeamPattern,
 } from "../scene/types";
+import { useProject } from "../project-session";
 import { useEditor } from "../store";
+import { ProjectSections } from "./project-sections";
 import { Check, ColorInput, Field, IconButton, Range, Section, Select, TextInput } from "./controls";
 
 const VIEWS: PitchView[] = ["full", "half", "third", "box", "blank"];
@@ -257,6 +259,7 @@ export function Panel() {
   const overlays = useEditor((s) => s.overlays);
   const s = useEditor.getState();
   const [formation, setFormation] = useState<FormationId>("4-4-2");
+  const online = useProject((p) => p.status === "ready");
 
   const objects = useMemo(() => {
     const ids = new Set(selection);
@@ -268,6 +271,8 @@ export function Panel() {
   return (
     <div className="flex flex-col">
       {objects.length > 0 && <SelectionSection objects={objects} />}
+
+      {online && <ProjectSections />}
 
       <Section title={t("pitch")}>
         <Field label={t("view")}>
@@ -403,7 +408,7 @@ export function Panel() {
         <Button variant="outline" size="sm" disabled={scene.objects.length === 0} onClick={s.clearAll}>
           {t("clear")}
         </Button>
-        <p className="text-xs text-muted-foreground">{t("localSave")}</p>
+        <p className="text-xs text-muted-foreground">{online ? t("onlineSave") : t("localSave")}</p>
       </Section>
     </div>
   );
