@@ -9,6 +9,7 @@ import {
   updateProject,
 } from "@/lib/data/api";
 import type { BoardRow, ProjectRow, VersionMeta } from "@/lib/data/types";
+import { readDrillSheet, readSessionSheet, type DrillSheet, type SessionSheet } from "@/lib/sheet";
 import { createScene, migrateScene } from "./scene/defaults";
 import type { Scene } from "./scene/types";
 import { useEditor } from "./store";
@@ -113,9 +114,14 @@ export async function openProject(id: string) {
       useProject.setState({ status: "missing" });
       return;
     }
-    const boards = data.boards.map((b) => ({ ...b, scene: migrateScene(b.scene) ?? createScene() }));
+    const boards = data.boards.map((b) => ({
+      ...b,
+      sheet: readDrillSheet(b.sheet),
+      scene: migrateScene(b.scene) ?? createScene(),
+    }));
+    const project = { ...data.project, sheet: readSessionSheet(data.project.sheet) };
     for (const b of boards) baseline.set(b.id, b.scene);
-    useProject.setState({ status: "ready", project: data.project, boards, currentId: boards[0].id });
+    useProject.setState({ status: "ready", project, boards, currentId: boards[0].id });
     showScene(boards[0].scene);
     useEditor.setState({ hydrated: true });
 
@@ -168,12 +174,16 @@ export function selectBoard(id: string) {
   showScene(next.scene);
 }
 
-async function appendBoard(name: string, scene: Scene, extra: Partial<Pick<BoardRow, "notes" | "video_url">> = {}) {
+async function appendBoard(
+  name: string,
+  scene: Scene,
+  extra: Partial<Pick<BoardRow, "notes" | "video_url" | "sheet">> = {},
+) {
   const { project, boards } = useProject.getState();
   if (!project) return;
   const position = Math.max(-1, ...boards.map((b) => b.position)) + 1;
   const row = await insertBoard({ project_id: project.id, name, scene, position, ...extra });
-  const board = { ...row, scene: migrateScene(row.scene) ?? scene };
+  const board = { ...row, sheet: readDrillSheet(row.sheet), scene: migrateScene(row.scene) ?? scene };
   baseline.set(board.id, board.scene);
   useProject.setState((s) => ({ boards: [...s.boards, board] }));
   selectBoard(board.id);
@@ -181,7 +191,8 @@ async function appendBoard(name: string, scene: Scene, extra: Partial<Pick<Board
 
 /** Nouveau tableau vide, avec le même terrain et les mêmes équipes que le tableau affiché. */
 export function addBoard(name: string) {
-  return appendBoard(name, { ...useEditor.getState().scene, objects: [] });
+  // Même terrain et mêmes équipes, mais ni objets ni étapes d'animation.
+  return appendBoard(name, { ...useEditor.getState().scene, objects: [], frames: [] });
 }
 
 export function duplicateBoard(name: string) {
@@ -190,6 +201,7 @@ export function duplicateBoard(name: string) {
   return appendBoard(name, useEditor.getState().scene, {
     notes: current?.notes ?? "",
     video_url: current?.video_url ?? null,
+    sheet: current?.sheet ?? {},
   });
 }
 
@@ -212,7 +224,7 @@ export async function removeBoard(id: string) {
 }
 
 /** Notes et lien vidéo : affichage immédiat, enregistrement différé. */
-export function setBoardMeta(id: string, patch: Partial<Pick<BoardRow, "notes" | "video_url">>) {
+export function setBoardMeta(id: string, patch: Partial<Pick<BoardRow, "notes" | "video_url" | "sheet">>) {
   patchBoard(id, patch);
   const key = `${id}:${Object.keys(patch).join(",")}`;
   clearTimeout(metaTimers.get(key));
@@ -248,4 +260,45 @@ export async function fetchVersions(): Promise<VersionMeta[]> {
 export async function restoreVersion(id: string) {
   const scene = migrateScene(await loadVersionScene(id));
   if (scene) useEditor.getState().replaceScene(scene, "restoreVersion");
+}
+
+/** Modifie un champ de la fiche d'exercice du tableau affiché. */
+export function setDrillField<K extends keyof DrillSheet>(key: K, value: DrillSheet[K] | "") {
+  const { boards, currentId } = useProject.getState();
+  const board = boards.find((b) => b.id === currentId);
+  if (!board) return;
+  const sheet: DrillSheet = { ...board.sheet };
+  if (value) sheet[key] = value as DrillSheet[K];
+  else delete sheet[key];
+  setBoardMeta(board.id, { sheet });
+}
+
+let projectSheetTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Modifie un champ de l'en-tête de la fiche de séance ; enregistrement différé. */
+export function setSessionField(key: keyof SessionSheet, value: string) {
+  const { project } = useProject.getState();
+  if (!project) return;
+  const sheet: SessionSheet = { ...project.sheet };
+  if (value) sheet[key] = value;
+  else delete sheet[key];
+  useProject.setState({ project: { ...project, sheet }, saveState: "dirty" });
+  clearTimeout(projectSheetTimer);
+  projectSheetTimer = setTimeout(async () => {
+    const current = useProject.getState().project;
+    if (!current) return;
+    try {
+      await updateProject(current.id, { sheet: current.sheet });
+      if (metaTimers.size === 0 && dirty.size === 0) useProject.setState({ saveState: "saved" });
+    } catch {
+      useProject.setState({ saveState: "error" });
+    }
+  }, META_DELAY);
+}
+
+/** Tous les tableaux du projet, celui affiché avec sa scène à jour (pour la fiche PDF). */
+export function sessionSnapshot() {
+  stashCurrent();
+  const { project, boards } = useProject.getState();
+  return project ? { name: project.name, sheet: project.sheet, boards } : null;
 }

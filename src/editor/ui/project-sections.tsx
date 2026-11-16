@@ -7,6 +7,7 @@ import type { VersionMeta } from "@/lib/data/types";
 import { videoEmbedUrl } from "@/lib/video";
 import { fetchVersions, restoreVersion, setBoardMeta, useProject } from "../project-session";
 import { Section } from "./controls";
+import { DrillSection } from "./drill-section";
 
 /** Notes, vidéo et versions du tableau affiché (projets enregistrés uniquement). */
 export function ProjectSections() {
@@ -68,6 +69,8 @@ export function ProjectSections() {
           <p className="text-xs text-destructive">{t("videoInvalid")}</p>
         ) : null}
       </Section>
+
+      <DrillSection />
 
       <Section title={t("versions")}>
         <Button variant="outline" size="sm" disabled={busy} onClick={toggleVersions}>

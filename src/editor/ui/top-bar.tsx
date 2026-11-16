@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Cloud,
   CloudOff,
+  FileText,
   LoaderCircle,
   Maximize,
   Redo2,
@@ -15,7 +16,9 @@ import {
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { canvasApi, useView } from "../canvas/editor-canvas";
+import { useState } from "react";
 import { renameProject, useProject } from "../project-session";
+import { SessionDialog } from "./session-dialog";
 import { useEditor } from "../store";
 import { cn } from "@/lib/utils";
 import { IconButton } from "./controls";
@@ -51,6 +54,26 @@ function ProjectTitle() {
         <Icon className={cn("size-4", saveState === "saving" && "animate-spin")} aria-hidden />
         <span className="sr-only md:not-sr-only">{label}</span>
       </span>
+      <SessionButton />
+    </>
+  );
+}
+
+function SessionButton() {
+  const t = useTranslations("sheet");
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex h-11 shrink-0 items-center gap-2 rounded-md px-2.5 text-sm font-medium hover:bg-muted"
+        aria-haspopup="dialog"
+      >
+        <FileText className="size-5" aria-hidden />
+        <span className="sr-only lg:not-sr-only">{t("open")}</span>
+      </button>
+      {open && <SessionDialog onClose={() => setOpen(false)} />}
     </>
   );
 }
