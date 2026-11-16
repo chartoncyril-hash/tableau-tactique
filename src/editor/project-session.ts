@@ -12,7 +12,11 @@ import type { BoardRow, ProjectRow, VersionMeta } from "@/lib/data/types";
 import { readDrillSheet, readSessionSheet, type DrillSheet, type SessionSheet } from "@/lib/sheet";
 import { createScene, migrateScene } from "./scene/defaults";
 import type { Scene } from "./scene/types";
+import { canEditRole, refreshClubs, roleIn, useWorkspace } from "@/lib/workspace";
 import { useEditor } from "./store";
+
+/** Lecteur d'un club : rien n'est écrit (les fonctions ci-dessous ne font alors rien). */
+const locked = () => useEditor.getState().readOnly;
 
 /**
  * Session d'édition d'un projet enregistré : charge les tableaux, bascule de l'un à l'autre,
@@ -138,7 +142,7 @@ export async function openProject(id: string, boardId?: string) {
   useProject.setState({ ...initial, status: "loading" });
   useEditor.setState({ hydrated: false });
   try {
-    const data = await loadProject(id);
+    const [data] = await Promise.all([loadProject(id), useWorkspace.getState().loaded ? null : refreshClubs()]);
     if (mine !== session) return;
     if (!data || data.boards.length === 0) {
       useProject.setState({ status: "missing" });
@@ -152,6 +156,7 @@ export async function openProject(id: string, boardId?: string) {
     const project = { ...data.project, sheet: readSessionSheet(data.project.sheet) };
     for (const b of boards) baseline.set(b.id, b.scene);
     const first = boards.find((b) => b.id === boardId) ?? boards[0];
+    useEditor.setState({ readOnly: !canEditRole(roleIn(project.club_id)) });
     useProject.setState({ status: "ready", project, boards, currentId: first.id });
     showScene(first.scene);
     useEditor.setState({ hydrated: true });
@@ -186,7 +191,7 @@ export function closeProject() {
   baseline.clear();
   lastVersionAt.clear();
   useProject.setState(initial);
-  useEditor.setState({ hydrated: false });
+  useEditor.setState({ hydrated: false, readOnly: false });
 }
 
 /** Range la scène affichée dans la liste locale avant de changer de tableau. */
@@ -221,11 +226,13 @@ async function appendBoard(
 
 /** Nouveau tableau vide, avec le même terrain et les mêmes équipes que le tableau affiché. */
 export function addBoard(name: string) {
+  if (locked()) return;
   // Même terrain et mêmes équipes, mais ni objets ni étapes d'animation.
   return appendBoard(name, { ...useEditor.getState().scene, objects: [], frames: [] });
 }
 
 export function duplicateBoard(name: string) {
+  if (locked()) return;
   const { boards, currentId } = useProject.getState();
   const current = boards.find((b) => b.id === currentId);
   return appendBoard(name, useEditor.getState().scene, {
@@ -236,6 +243,7 @@ export function duplicateBoard(name: string) {
 }
 
 export async function renameBoard(id: string, name: string) {
+  if (locked()) return;
   const clean = name.trim().slice(0, 120);
   if (!clean) return;
   patchBoard(id, { name: clean });
@@ -243,6 +251,7 @@ export async function renameBoard(id: string, name: string) {
 }
 
 export async function removeBoard(id: string) {
+  if (locked()) return;
   const { boards, currentId } = useProject.getState();
   if (boards.length <= 1) return;
   const index = boards.findIndex((b) => b.id === id);
@@ -255,11 +264,13 @@ export async function removeBoard(id: string) {
 
 /** Notes et lien vidéo : affichage immédiat, enregistrement différé. */
 export function setBoardMeta(id: string, patch: Partial<Pick<BoardRow, "notes" | "video_url" | "sheet">>) {
+  if (locked()) return;
   patchBoard(id, patch);
   deferMeta(`${id}:${Object.keys(patch).join(",")}`, () => updateBoard(id, patch));
 }
 
 export async function renameProject(name: string) {
+  if (locked()) return;
   const { project } = useProject.getState();
   const clean = name.trim().slice(0, 120);
   if (!project || !clean || clean === project.name) return;
@@ -274,18 +285,21 @@ export async function fetchVersions(): Promise<VersionMeta[]> {
 
 /** Restaure une version dans l'éditeur ; l'opération reste annulable. */
 export async function restoreVersion(id: string) {
+  if (locked()) return;
   const scene = migrateScene(await loadVersionScene(id));
   if (scene) useEditor.getState().replaceScene(scene, "restoreVersion");
 }
 
 /** Modifie un champ de la fiche d'exercice du tableau affiché. */
 export function setDrillField<K extends keyof DrillSheet>(key: K, value: DrillSheet[K] | "") {
+  if (locked()) return;
   const { currentId } = useProject.getState();
   if (currentId) setBoardSheetField(currentId, key, value);
 }
 
 /** Modifie un champ de la fiche d'exercice d'un tableau ; enregistrement différé. */
 export function setBoardSheetField<K extends keyof DrillSheet>(boardId: string, key: K, value: DrillSheet[K] | "") {
+  if (locked()) return;
   const board = useProject.getState().boards.find((b) => b.id === boardId);
   if (!board) return;
   const sheet: DrillSheet = { ...board.sheet };
@@ -297,6 +311,7 @@ export function setBoardSheetField<K extends keyof DrillSheet>(boardId: string, 
 
 /** Modifie un champ de l'en-tête de la fiche de séance ; enregistrement différé. */
 export function setSessionField(key: keyof SessionSheet, value: string) {
+  if (locked()) return;
   const { project } = useProject.getState();
   if (!project) return;
   const sheet: SessionSheet = { ...project.sheet };
@@ -311,6 +326,7 @@ export function setSessionField(key: keyof SessionSheet, value: string) {
 
 /** Déplace un tableau d'un cran vers le début (-1) ou la fin (+1) du projet. */
 export async function moveBoard(id: string, delta: -1 | 1) {
+  if (locked()) return;
   const { boards } = useProject.getState();
   const index = boards.findIndex((b) => b.id === id);
   const other = boards[index + delta];

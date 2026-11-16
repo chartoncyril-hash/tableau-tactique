@@ -10,6 +10,8 @@ export interface ProjectRow {
   id: string;
   name: string;
   folder_id: string | null;
+  /** Club propriétaire ; nul pour un projet personnel. */
+  club_id: string | null;
   tags: string[];
   favorite: boolean;
   is_template: boolean;

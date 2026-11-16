@@ -9,6 +9,7 @@ import { activeShare, createShare, revokeShare } from "@/lib/data/api";
 import type { ShareRow } from "@/lib/data/types";
 import { exportSessionPdf } from "../export-pdf";
 import { flush, sessionSnapshot, useProject } from "../project-session";
+import { useEditor } from "../store";
 import { usePdfLabels } from "../use-pdf-labels";
 
 /** Téléchargement du PDF et lien public en lecture seule. */
@@ -17,6 +18,8 @@ export function ExportShare() {
   const locale = useLocale();
   const labels = usePdfLabels();
   const projectId = useProject((s) => s.project?.id);
+  // Les liens publics sont gérés par ceux qui peuvent modifier le projet.
+  const readOnly = useEditor((s) => s.readOnly);
   const [share, setShare] = useState<ShareRow | null | undefined>(undefined);
   const [busy, setBusy] = useState<"pdf" | "share" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,16 +92,18 @@ export function ExportShare() {
           <FileDown aria-hidden />
           {busy === "pdf" ? t("pdfBusy") : t("pdfButton")}
         </Button>
-        <Button
-          variant={share ? "outline" : "secondary"}
-          disabled={busy !== null || share === undefined}
-          onClick={toggleShare}
-        >
-          <Link2 aria-hidden />
-          {share ? t("revoke") : t("createLink")}
-        </Button>
+        {!readOnly && (
+          <Button
+            variant={share ? "outline" : "secondary"}
+            disabled={busy !== null || share === undefined}
+            onClick={toggleShare}
+          >
+            <Link2 aria-hidden />
+            {share ? t("revoke") : t("createLink")}
+          </Button>
+        )}
       </div>
-      {share && (
+      {share && !readOnly && (
         <div className="flex gap-2">
           <Input readOnly aria-label={t("shareUrl")} value={url} onFocus={(e) => e.target.select()} />
           <Button variant="outline" size="icon" aria-label={t("copy")} title={t("copy")} onClick={copy}>
@@ -106,7 +111,7 @@ export function ExportShare() {
           </Button>
         </div>
       )}
-      <p className="text-xs text-muted-foreground">{t("shareHint")}</p>
+      {!readOnly && <p className="text-xs text-muted-foreground">{t("shareHint")}</p>}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}

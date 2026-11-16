@@ -8,29 +8,35 @@ import { Card } from "@/components/ui/card";
 import { Link, useRouter } from "@/i18n/navigation";
 import { createTeam, listTeams } from "@/lib/data/roster-api";
 import type { TeamRow } from "@/lib/roster";
+import { canEditRole, roleIn, useWorkspace } from "@/lib/workspace";
 import { KitPreview } from "./kit-preview";
 
 export function TeamsList() {
   const t = useTranslations("roster");
   const router = useRouter();
-  const [teams, setTeams] = useState<TeamRow[] | null>(null);
+  const clubId = useWorkspace((s) => s.clubId);
+  const loaded = useWorkspace((s) => s.loaded);
+  const canEdit = useWorkspace((s) => canEditRole(roleIn(s.clubId, s.clubs)));
+  const [state, setState] = useState<{ clubId: string | null; teams: TeamRow[] } | null>(null);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const teams = state && state.clubId === clubId ? state.teams : null;
 
   useEffect(() => {
+    if (!loaded) return;
     let cancelled = false;
-    listTeams()
-      .then((rows) => !cancelled && setTeams(rows))
+    listTeams(clubId)
+      .then((rows) => !cancelled && setState({ clubId, teams: rows }))
       .catch(() => !cancelled && setError(true));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [clubId, loaded]);
 
   const create = async () => {
     setBusy(true);
     try {
-      const team = await createTeam(t("newTeamName"));
+      const team = await createTeam(t("newTeamName"), clubId);
       router.push({ pathname: "/app/teams/team", query: { id: team.id } });
     } catch {
       setError(true);
@@ -43,10 +49,12 @@ export function TeamsList() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-        <Button onClick={create} disabled={busy}>
-          <Plus aria-hidden />
-          {t("newTeam")}
-        </Button>
+        {canEdit && (
+          <Button onClick={create} disabled={busy}>
+            <Plus aria-hidden />
+            {t("newTeam")}
+          </Button>
+        )}
       </div>
       <p className="text-sm text-muted-foreground">{t("intro")}</p>
       {error && (

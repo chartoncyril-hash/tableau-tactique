@@ -13,6 +13,7 @@ import {
   Star,
   Tag,
   Trash2,
+  Building2,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
@@ -30,9 +31,11 @@ import {
   purgeProject,
   renameFolder,
   searchProjects,
+  moveProject,
   trashFolder,
   updateProject,
 } from "@/lib/data/api";
+import { canEditRole, roleIn, useWorkspace } from "@/lib/workspace";
 import type { FolderRow, ProjectFilter, ProjectRow } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
 import { Dialog } from "./dialog";
@@ -43,6 +46,7 @@ type DialogState =
   | { kind: "rename"; project: ProjectRow }
   | { kind: "tags"; project: ProjectRow }
   | { kind: "move"; project: ProjectRow }
+  | { kind: "space"; project: ProjectRow }
   | { kind: "newFolder" }
   | { kind: "renameFolder"; folder: FolderRow }
   | { kind: "deleteFolder"; folder: FolderRow }
@@ -70,7 +74,13 @@ export function Dashboard() {
   const format = useFormatter();
   const router = useRouter();
 
+  const clubId = useWorkspace((s) => s.clubId);
+  const clubs = useWorkspace((s) => s.clubs);
+  const loaded = useWorkspace((s) => s.loaded);
+  // Lecteur d'un club : consultation et copie dans son espace personnel, rien d'autre.
+  const canEdit = canEditRole(roleIn(clubId, clubs));
   const [filter, setFilter] = useState<ProjectFilter>({ kind: "all" });
+  const [scopeShown, setScopeShown] = useState(clubId);
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
@@ -91,9 +101,17 @@ export function Dashboard() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Changement d'espace : on repart de « Tous », les dossiers de l'ancien espace n'existent plus ici.
+  if (scopeShown !== clubId) {
+    setScopeShown(clubId);
+    setFilter({ kind: "all" });
+    setProjects(null);
+  }
+
   useEffect(() => {
+    if (!loaded) return;
     let cancelled = false;
-    Promise.all([search ? searchProjects(search) : listProjects(filter), listFolders()])
+    Promise.all([search ? searchProjects(search, clubId) : listProjects(filter, clubId), listFolders(clubId)])
       .then(([rows, folderRows]) => {
         if (cancelled) return;
         setProjects(rows);
@@ -107,7 +125,7 @@ export function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [filter, search, reloadKey]);
+  }, [filter, search, reloadKey, clubId, loaded]);
 
   /** Exécute une action, referme menus et fenêtres, puis recharge la liste. */
   const act = async (action: () => Promise<unknown>) => {
@@ -132,7 +150,7 @@ export function Dashboard() {
     try {
       const scene = createScene([tEditor("teamDefault", { letter: "A" }), tEditor("teamDefault", { letter: "B" })]);
       const folderId = filter.kind === "folder" ? filter.folderId : null;
-      open(await createProject(t("newProjectName"), tEditor("project.boardDefault", { n: 1 }), scene, folderId));
+      open(await createProject(t("newProjectName"), tEditor("project.boardDefault", { n: 1 }), scene, folderId, clubId));
     } catch {
       setError(true);
     } finally {
@@ -144,7 +162,7 @@ export function Dashboard() {
   const openTemplate = async (project: ProjectRow) => {
     setBusy(true);
     try {
-      open(await duplicateProject(project.id, project.name, false));
+      open(await duplicateProject(project.id, project.name, false, canEdit ? clubId : null));
     } catch {
       setError(true);
     } finally {
@@ -172,10 +190,14 @@ export function Dashboard() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-        <Button onClick={newProject} disabled={busy}>
-          <Plus aria-hidden />
-          {t("newProject")}
-        </Button>
+        {canEdit ? (
+          <Button onClick={newProject} disabled={busy}>
+            <Plus aria-hidden />
+            {t("newProject")}
+          </Button>
+        ) : (
+          <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{t("viewerHint")}</p>
+        )}
       </div>
 
       <div className="relative">
@@ -206,15 +228,17 @@ export function Dashboard() {
             {folder.name}
           </FilterChip>
         ))}
-        <FilterChip active={false} onClick={() => setDialog({ kind: "newFolder" })}>
-          <FolderPlus className="size-4" aria-hidden />
-          {t("newFolder")}
-        </FilterChip>
+        {canEdit && (
+          <FilterChip active={false} onClick={() => setDialog({ kind: "newFolder" })}>
+            <FolderPlus className="size-4" aria-hidden />
+            {t("newFolder")}
+          </FilterChip>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-medium">{heading}</h2>
-        {currentFolder && !search && (
+        {currentFolder && !search && canEdit && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setDialog({ kind: "renameFolder", folder: currentFolder })}>
               <Pencil aria-hidden />
@@ -273,7 +297,7 @@ export function Dashboard() {
                         {project.name}
                       </Link>
                     )}
-                    {!trashed && (
+                    {!trashed && canEdit && (
                       <button
                         type="button"
                         aria-label={project.favorite ? t("unfavorite") : t("favorite")}
@@ -359,36 +383,51 @@ export function Dashboard() {
                       role="menu"
                       className="absolute right-3 bottom-14 z-10 flex w-60 flex-col rounded-lg border bg-card p-1 shadow-xl"
                     >
-                      <MenuItem icon={Pencil} onClick={() => { setMenuFor(null); setDialog({ kind: "rename", project }); }}>
-                        {t("rename")}
-                      </MenuItem>
-                      <MenuItem icon={Tag} onClick={() => { setMenuFor(null); setDialog({ kind: "tags", project }); }}>
-                        {t("editTags")}
-                      </MenuItem>
-                      <MenuItem icon={FolderInput} onClick={() => { setMenuFor(null); setDialog({ kind: "move", project }); }}>
-                        {t("move")}
-                      </MenuItem>
+                      {canEdit && (
+                        <>
+                          <MenuItem icon={Pencil} onClick={() => { setMenuFor(null); setDialog({ kind: "rename", project }); }}>
+                            {t("rename")}
+                          </MenuItem>
+                          <MenuItem icon={Tag} onClick={() => { setMenuFor(null); setDialog({ kind: "tags", project }); }}>
+                            {t("editTags")}
+                          </MenuItem>
+                          <MenuItem icon={FolderInput} onClick={() => { setMenuFor(null); setDialog({ kind: "move", project }); }}>
+                            {t("move")}
+                          </MenuItem>
+                          {(clubs.some((c) => canEditRole(c.role)) || clubId) && (
+                            <MenuItem icon={Building2} onClick={() => { setMenuFor(null); setDialog({ kind: "space", project }); }}>
+                              {t("changeSpace")}
+                            </MenuItem>
+                          )}
+                        </>
+                      )}
                       <MenuItem
                         icon={Copy}
-                        onClick={() => act(() => duplicateProject(project.id, t("copyName", { name: project.name }), project.is_template))}
+                        onClick={() =>
+                          act(() =>
+                            duplicateProject(project.id, t("copyName", { name: project.name }), project.is_template, canEdit ? clubId : null),
+                          )
+                        }
                       >
-                        {t("duplicate")}
+                        {canEdit ? t("duplicate") : t("copyToMine")}
                       </MenuItem>
-                      {!project.is_template && (
+                      {!project.is_template && canEdit && (
                         <MenuItem
                           icon={LayoutTemplate}
-                          onClick={() => act(() => duplicateProject(project.id, project.name, true))}
+                          onClick={() => act(() => duplicateProject(project.id, project.name, true, clubId))}
                         >
                           {t("saveAsTemplate")}
                         </MenuItem>
                       )}
-                      <MenuItem
-                        icon={Trash2}
-                        danger
-                        onClick={() => act(() => updateProject(project.id, { deleted_at: new Date().toISOString() }))}
-                      >
-                        {t("trash")}
-                      </MenuItem>
+                      {canEdit && (
+                        <MenuItem
+                          icon={Trash2}
+                          danger
+                          onClick={() => act(() => updateProject(project.id, { deleted_at: new Date().toISOString() }))}
+                        >
+                          {t("trash")}
+                        </MenuItem>
+                      )}
                     </div>
                   )}
                 </Card>
@@ -399,7 +438,7 @@ export function Dashboard() {
       )}
 
       {dialog && (
-        <DashboardDialog dialog={dialog} folders={folders} busy={busy} onClose={() => setDialog(null)} act={act} afterFolderDelete={() => pick({ kind: "all" })} afterFolderCreate={(id) => pick({ kind: "folder", folderId: id })} />
+        <DashboardDialog dialog={dialog} folders={folders} clubId={clubId} busy={busy} onClose={() => setDialog(null)} act={act} afterFolderDelete={() => pick({ kind: "all" })} afterFolderCreate={(id) => pick({ kind: "folder", folderId: id })} />
       )}
     </div>
   );
@@ -435,6 +474,7 @@ function MenuItem({
 function DashboardDialog({
   dialog,
   folders,
+  clubId,
   busy,
   onClose,
   act,
@@ -443,6 +483,7 @@ function DashboardDialog({
 }: {
   dialog: DialogState;
   folders: FolderRow[];
+  clubId: string | null;
   busy: boolean;
   onClose: () => void;
   act: (action: () => Promise<unknown>) => Promise<void>;
@@ -450,8 +491,15 @@ function DashboardDialog({
   afterFolderCreate: (id: string) => void;
 }) {
   const t = useTranslations("dash");
+  const clubs = useWorkspace((s) => s.clubs);
+  // Destinations possibles : mon espace et les clubs où je peux modifier, sauf l'espace actuel.
+  const spaces = [{ id: "", name: t("personalSpace") }, ...clubs.filter((c) => canEditRole(c.role))].filter(
+    (space) => space.id !== (clubId ?? ""),
+  );
   const initial =
-    dialog.kind === "rename"
+    dialog.kind === "space"
+      ? (spaces[0]?.id ?? "")
+      : dialog.kind === "rename"
       ? dialog.project.name
       : dialog.kind === "tags"
         ? dialog.project.tags.join(", ")
@@ -477,8 +525,11 @@ function DashboardDialog({
       case "move":
         void act(() => updateProject(dialog.project.id, { folder_id: value || null }));
         break;
+      case "space":
+        void act(() => moveProject(dialog.project.id, value || null));
+        break;
       case "newFolder":
-        if (text) void act(async () => afterFolderCreate((await createFolder(text.slice(0, 80))).id));
+        if (text) void act(async () => afterFolderCreate((await createFolder(text.slice(0, 80), clubId)).id));
         break;
       case "renameFolder":
         if (text) void act(() => renameFolder(dialog.folder.id, text.slice(0, 80)));
@@ -510,7 +561,23 @@ function DashboardDialog({
           <p className="text-sm text-muted-foreground">{t("dialogs.purge.body", { name: dialog.project.name })}</p>
         )}
         {dialog.kind === "tags" && <p className="text-sm text-muted-foreground">{t("dialogs.tags.body")}</p>}
-        {dialog.kind === "move" ? (
+        {dialog.kind === "space" && (
+          <p className="text-sm text-muted-foreground">{t("dialogs.space.body", { name: dialog.project.name })}</p>
+        )}
+        {dialog.kind === "space" ? (
+          <select
+            aria-label={t("dialogs.space.title")}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="h-11 rounded-md border border-input bg-card px-3"
+          >
+            {spaces.map((space) => (
+              <option key={space.id} value={space.id}>
+                {space.name}
+              </option>
+            ))}
+          </select>
+        ) : dialog.kind === "move" ? (
           <select
             aria-label={t("dialogs.move.title")}
             value={value}

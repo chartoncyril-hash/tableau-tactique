@@ -157,6 +157,22 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
   reste monté sous la vue 3D, et la vue 3D elle-même.
 - E2E : Chromium est lancé avec SwiftShader (`playwright.config.ts`) pour disposer de WebGL en CI.
 
+## Espaces club (phase 9a)
+
+- Tables `clubs`, `club_members` (rôle `admin` | `coach` | `viewer`), `club_invites` (jeton
+  à usage unique, 14 jours). `folders`, `projects`, `teams` ont un `club_id` (nul = personnel).
+- RLS : `can_read(club_id, owner_id)` / `can_edit(...)` s'appuient sur `club_role(club)`
+  (SECURITY DEFINER, renvoie le seul rôle de l'appelant). Tableaux, versions et liens publics
+  suivent leur projet ; joueurs suivent leur équipe. Déclencheurs : `keep_owner` (créateur figé),
+  `keep_one_admin`, `check_player_photo` (dossier de l'espace, vérifié quand le chemin change).
+- Fonctions : `create_club`, `get_invite` (aussi sans compte), `accept_invite`,
+  `club_members_list` ; `create_project`, `duplicate_project` et `search_projects` prennent `p_club`.
+- Client : `src/lib/workspace.ts` (espace courant mémorisé dans le navigateur, mes clubs et rôles),
+  `src/lib/data/clubs-api.ts`. Lecture seule : `useEditor.readOnly` bloque `commit`, `live` et
+  `replaceScene` ; les fonctions d'écriture de `project-session` ne font rien.
+- Limite connue : supprimer un compte supprime aussi les contenus de club qu'il a créés
+  (clé `owner_id` en cascade). À traiter avant d'ouvrir les clubs à grande échelle.
+
 ## Tests de bout en bout
 
 Les parcours Playwright tournent contre `e2e/fake-supabase.mjs`, un faux Supabase en mémoire

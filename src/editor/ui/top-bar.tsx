@@ -27,6 +27,7 @@ import { setViewMode, useView3d } from "../three/view-mode";
 function ProjectTitle() {
   const t = useTranslations("editor.project");
   const name = useProject((s) => s.project?.name ?? "");
+  const readOnly = useEditor((s) => s.readOnly);
   const saveState = useProject((s) => s.saveState);
   const Icon = saveState === "error" ? CloudOff : saveState === "saved" ? Cloud : LoaderCircle;
   const label = t(`save.${saveState}`);
@@ -37,6 +38,7 @@ function ProjectTitle() {
         key={name}
         aria-label={t("name")}
         defaultValue={name}
+        readOnly={readOnly}
         maxLength={120}
         className="h-9 min-w-0 flex-1 truncate rounded-md border border-transparent bg-transparent px-2 text-sm font-medium hover:border-input focus:border-input sm:max-w-72"
         onBlur={(e) => void renameProject(e.target.value)}
@@ -85,8 +87,8 @@ export function TopBar({
   project?: boolean;
 }) {
   const t = useTranslations("editor");
-  const canUndo = useEditor((s) => s.past.length > 0);
-  const canRedo = useEditor((s) => s.future.length > 0);
+  const canUndo = useEditor((s) => s.past.length > 0 && !s.readOnly);
+  const canRedo = useEditor((s) => s.future.length > 0 && !s.readOnly);
   const undo = useEditor((s) => s.undo);
   const redo = useEditor((s) => s.redo);
   const count = useEditor((s) => s.scene.objects.length);

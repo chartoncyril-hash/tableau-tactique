@@ -1,5 +1,21 @@
 # Journal des modifications
 
+## Phase 9a — Espaces club
+
+- Sélecteur d'espace dans l'en-tête : « Mon espace personnel » ou un club. Projets, dossiers,
+  recherche et effectifs se limitent à l'espace choisi ; tout ce qui y est créé y est rangé.
+- Créer un club (on en devient admin). Page « Club » : nom, membres et rôles, invitations,
+  quitter ou supprimer le club.
+- Rôles : admin (gère le club et ses membres), entraîneur (crée et modifie), lecteur (consulte,
+  présente, exporte, copie dans son espace). Un club garde toujours au moins un admin.
+- Invitations par lien à usage unique, valable 14 jours, révocable ; la page d'invitation fait se
+  connecter ou créer un compte puis revient d'elle-même pour rejoindre le club.
+- « Changer d'espace » pour un projet ; une équipe change d'espace avec ses photos.
+- Lecteurs : éditeur, fiche de séance et effectifs en lecture seule (bandeau, outils masqués) ;
+  lecture de l'animation, vue 3D et exports restent disponibles.
+- Base : contenus personnels ou de club protégés par la RLS ; créateur d'une ligne figé ; photos
+  de club dans `clubs/<club>/`.
+
 ## Phase 8 — Vue 3D
 
 - Bouton « Vue 3D » dans l'éditeur : le tableau affiché en relief (joueurs aux couleurs et motifs

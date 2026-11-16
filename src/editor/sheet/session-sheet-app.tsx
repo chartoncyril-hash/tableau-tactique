@@ -417,6 +417,7 @@ export default function SessionSheetApp({ projectId }: { projectId: string }) {
   }
 
   const main = project.sheet.color || DEFAULT_SHEET_COLOR;
+  const readOnly = useEditor.getState().readOnly;
   const style = { "--sheet-main": main, "--sheet-light": mix(main, 0.45) } as CSSProperties;
 
   const add = async () => {
@@ -446,6 +447,7 @@ export default function SessionSheetApp({ projectId }: { projectId: string }) {
           key={project.name}
           aria-label={te("name")}
           defaultValue={project.name}
+          readOnly={readOnly}
           maxLength={120}
           className="h-9 min-w-0 flex-1 truncate rounded-md border border-transparent bg-transparent px-2 font-medium hover:border-input focus:border-input"
           onBlur={(e) => void renameProject(e.target.value)}
@@ -458,6 +460,7 @@ export default function SessionSheetApp({ projectId }: { projectId: string }) {
             type="color"
             aria-label={t("color")}
             value={main}
+            disabled={readOnly}
             onChange={(e) => setSessionField("color", e.target.value)}
             className="h-9 w-11 cursor-pointer rounded-md border border-input bg-card p-1"
           />
@@ -467,6 +470,12 @@ export default function SessionSheetApp({ projectId }: { projectId: string }) {
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-3 sm:p-5">
         <h1 className="sr-only">{t("title")}</h1>
         <ExportShare />
+        {readOnly && (
+          <p role="note" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {t("readOnly")}
+          </p>
+        )}
+        <fieldset disabled={readOnly} className="contents">
         <div className="flex flex-col gap-4 rounded-xl border bg-card p-3 sm:p-4">
           <SheetHeader sheet={project.sheet} scenes={scenes} />
           <div className="grid gap-3 sm:grid-cols-2">
@@ -486,6 +495,7 @@ export default function SessionSheetApp({ projectId }: { projectId: string }) {
         {shown.map((board, i) => (
           <Exercise key={board.id} board={board} index={i} count={shown.length} projectId={projectId} />
         ))}
+        {!readOnly && (
         <button
           type="button"
           disabled={adding}
@@ -495,6 +505,8 @@ export default function SessionSheetApp({ projectId }: { projectId: string }) {
           <Plus className="size-5" aria-hidden />
           {t("addExercise")}
         </button>
+        )}
+        </fieldset>
         <p className="text-center text-xs text-muted-foreground">{t("footerHint")}</p>
       </main>
     </div>

@@ -625,7 +625,9 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
     () => new Map(scene.teams.map((t) => [t.id, t.color])),
     [scene.teams],
   );
-  const selecting = tool.type === "select" && !previewing;
+  // Lecture seule : ni déplacement, ni poignées ; on peut seulement regarder.
+  const readOnly = useEditor((s) => s.readOnly);
+  const selecting = tool.type === "select" && !previewing && !readOnly;
 
   const nodes = useMemo(
     () =>

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { addBoard, duplicateBoard, removeBoard, renameBoard, selectBoard, useProject } from "../project-session";
+import { useEditor } from "../store";
 import { IconButton } from "./controls";
 
 /** Onglets des tableaux d'un projet. Les actions portent sur le tableau affiché. */
@@ -15,6 +16,7 @@ export function BoardTabs() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const current = boards.find((b) => b.id === currentId);
+  const readOnly = useEditor((s) => s.readOnly);
 
   const run = async (action: () => Promise<unknown> | undefined) => {
     setBusy(true);
@@ -64,7 +66,7 @@ export function BoardTabs() {
               role="tab"
               aria-selected={board.id === currentId}
               onClick={() => selectBoard(board.id)}
-              onDoubleClick={() => setRenaming(board.id)}
+              onDoubleClick={() => !readOnly && setRenaming(board.id)}
               className={cn(
                 "h-9 max-w-48 shrink-0 truncate rounded-md px-3 text-sm transition-colors",
                 board.id === currentId
@@ -77,6 +79,8 @@ export function BoardTabs() {
           ),
         )}
       </div>
+      {!readOnly && (
+        <>
       <IconButton icon={Plus} label={t("addBoard")} disabled={busy} onClick={() => run(() => addBoard(nextName()))} />
       <span className="mx-1 h-6 w-px shrink-0 bg-border" />
       <IconButton
@@ -97,6 +101,8 @@ export function BoardTabs() {
         disabled={busy || boards.length <= 1 || !current}
         onClick={() => current && run(() => removeBoard(current.id))}
       />
+        </>
+      )}
     </nav>
   );
 }

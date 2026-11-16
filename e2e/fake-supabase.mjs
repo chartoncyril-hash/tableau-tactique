@@ -1,23 +1,90 @@
 // Faux Supabase en mémoire pour les parcours Playwright : authentification par mot de passe
-// et sous-ensemble de PostgREST utilisé par l'application. Chaque ligne appartient à
-// l'utilisateur du jeton, ce qui reproduit l'effet de la RLS. Ne sert qu'aux tests.
+// et sous-ensemble de PostgREST utilisé par l'application. Les règles d'accès reproduisent la
+// RLS de la vraie base (contenus personnels ou de club, rôles admin / entraîneur / lecteur).
+// Ne sert qu'aux tests.
 import { createHash, randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 
 const PORT = 54321;
 const PASSWORD = "motdepasse-test";
-const tables = { folders: [], projects: [], boards: [], board_versions: [], shares: [], teams: [], players: [] };
+const tables = {
+  folders: [], projects: [], boards: [], board_versions: [], shares: [], teams: [], players: [],
+  clubs: [], club_members: [], club_invites: [],
+};
+/** Utilisateurs connus (pour la liste des membres d'un club). */
+const users = new Map();
 /** Fichiers du faux stockage : chemin → { bytes, type }. */
 const files = new Map();
 const defaults = {
-  folders: () => ({ parent_id: null }),
-  projects: () => ({ folder_id: null, tags: [], favorite: false, is_template: false, sheet: {} }),
+  folders: () => ({ parent_id: null, club_id: null }),
+  projects: () => ({ folder_id: null, club_id: null, tags: [], favorite: false, is_template: false, sheet: {} }),
   boards: () => ({ position: 0, notes: "", video_url: null, sheet: {} }),
   board_versions: () => ({}),
   shares: () => ({ token: randomUUID().replaceAll("-", ""), revoked_at: null }),
-  teams: () => ({ club: "", category: "", kit: {} }),
+  teams: () => ({ club: "", club_id: null, category: "", kit: {} }),
   players: () => ({ first_name: "", last_name: "", number: "", position: "", foot: "", notes: "", photo_path: null }),
+  club_invites: () => ({
+    role: "coach", label: "", token: randomUUID().replaceAll("-", ""),
+    expires_at: new Date(Date.now() + 14 * 86_400_000).toISOString(), accepted_at: null, accepted_by: null, revoked_at: null,
+  }),
 };
+
+// --- Droits (copie de la RLS) ------------------------------------------------
+const roleOf = (club, uid) => tables.club_members.find((m) => m.club_id === club && m.user_id === uid)?.role ?? null;
+const canRead = (club, owner, uid) => (club ? roleOf(club, uid) !== null : owner === uid);
+const canEdit = (club, owner, uid) => (club ? ["admin", "coach"].includes(roleOf(club, uid)) : owner === uid);
+const byId = (table, id) => tables[table].find((r) => r.id === id);
+
+function readable(table, row, uid) {
+  switch (table) {
+    case "folders": case "projects": case "teams": return canRead(row.club_id, row.owner_id, uid);
+    case "boards": { const p = byId("projects", row.project_id); return !!p && readable("projects", p, uid); }
+    case "board_versions": { const b = byId("boards", row.board_id); return !!b && readable("boards", b, uid); }
+    case "shares": return editable(table, row, uid);
+    case "players": { const t = byId("teams", row.team_id); return !!t && readable("teams", t, uid); }
+    case "clubs": return roleOf(row.id, uid) !== null;
+    case "club_members": return roleOf(row.club_id, uid) !== null;
+    case "club_invites": return roleOf(row.club_id, uid) === "admin";
+  }
+  return false;
+}
+function editable(table, row, uid) {
+  switch (table) {
+    case "folders": case "projects": case "teams": return canEdit(row.club_id, row.owner_id, uid);
+    case "boards": case "shares": { const p = byId("projects", row.project_id); return !!p && canEdit(p.club_id, p.owner_id, uid); }
+    case "board_versions": { const b = byId("boards", row.board_id); return !!b && editable("boards", b, uid); }
+    case "players": { const t = byId("teams", row.team_id); return !!t && canEdit(t.club_id, t.owner_id, uid); }
+    case "clubs": case "club_invites": return roleOf(row.club_id ?? row.id, uid) === "admin";
+    case "club_members": return roleOf(row.club_id, uid) === "admin";
+  }
+  return false;
+}
+const deletable = (table, row, uid) => editable(table, row, uid) || (table === "club_members" && row.user_id === uid);
+const denied = () => Object.assign(new Error("new row violates row-level security policy"), { status: 403 });
+
+/** Un club garde toujours un admin. */
+function keepAdmin(member, nextRole) {
+  if (member.role !== "admin" || nextRole === "admin") return;
+  const others = tables.club_members.some((m) => m.club_id === member.club_id && m.role === "admin" && m.user_id !== member.user_id);
+  if (!others && byId("clubs", member.club_id)) throw new Error("last_admin");
+}
+
+/** Photo rangée dans le dossier de l'espace de l'équipe (vérifiée quand le chemin change). */
+function checkPhoto(row, uid) {
+  if (!row.photo_path) return;
+  const team = byId("teams", row.team_id);
+  const ok = team?.club_id ? row.photo_path.startsWith(`clubs/${team.club_id}/`) : row.photo_path.startsWith(`${uid}/`);
+  if (!ok) throw denied();
+}
+
+/** Droit sur un fichier : dossier personnel, ou dossier `clubs/<club>/` selon le rôle. */
+function fileRole(key, uid) {
+  if (key.startsWith(`${uid}/`)) return "admin";
+  const club = /^clubs\/([0-9a-f-]{36})\//.exec(key)?.[1];
+  return club ? roleOf(club, uid) : null;
+}
+const canReadFile = (key, uid) => fileRole(key, uid) !== null;
+const canWriteFile = (key, uid) => ["admin", "coach"].includes(fileRole(key, uid));
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
 const userFor = (email) => ({
@@ -31,6 +98,7 @@ const userFor = (email) => ({
 });
 function session(email) {
   const user = userFor(email);
+  users.set(user.id, email);
   const exp = Math.floor(Date.now() / 1000) + 3600;
   const access_token = `${b64({ alg: "HS256", typ: "JWT" })}.${b64({ sub: user.id, email, exp, role: "authenticated", aud: "authenticated" })}.test`;
   return { access_token, token_type: "bearer", expires_in: 3600, expires_at: exp, refresh_token: `r.${Buffer.from(email).toString("base64url")}`, user };
@@ -39,7 +107,10 @@ function userFromRequest(req) {
   const token = (req.headers.authorization ?? "").replace(/^Bearer /, "");
   try {
     const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
-    return payload.email ? userFor(payload.email) : null;
+    if (!payload.email) return null;
+    const user = userFor(payload.email);
+    users.set(user.id, payload.email);
+    return user;
   } catch {
     return null;
   }
@@ -76,7 +147,7 @@ function touchProject(id) {
   if (p) p.updated_at = stamp();
 }
 
-function insert(table, body, owner) {
+function insert(table, body, owner, { check = true } = {}) {
   if (typeof body.name === "string" && body.name.length === 0) throw new Error("check constraint: name");
   const row = {
     id: randomUUID(),
@@ -84,9 +155,17 @@ function insert(table, body, owner) {
     created_at: stamp(),
     updated_at: stamp(),
     deleted_at: null,
-    ...defaults[table](),
+    ...(defaults[table]?.() ?? {}),
     ...body,
   };
+  if (check) {
+    // Comme la RLS : pas d'insertion directe dans clubs / club_members, et droit de modifier l'espace visé.
+    if (table === "clubs" || table === "club_members") throw denied();
+    if (!editable(table, row, owner)) throw denied();
+    if (table === "club_invites" && row.invited_by !== owner) throw denied();
+    if (table === "players") checkPhoto(row, owner);
+    if (table === "projects" && row.folder_id && byId("folders", row.folder_id)?.club_id !== row.club_id) throw denied();
+  }
   tables[table].push(row);
   if (table === "boards") touchProject(row.project_id);
   return row;
@@ -94,14 +173,16 @@ function insert(table, body, owner) {
 
 const rpc = {
   create_project(args, owner) {
-    const p = insert("projects", { name: args.p_name, folder_id: args.p_folder ?? null }, owner);
+    const p = insert("projects", { name: args.p_name, folder_id: args.p_folder ?? null, club_id: args.p_club ?? null }, owner);
     insert("boards", { project_id: p.id, name: args.p_board_name, scene: args.p_scene, position: 0 }, owner);
     return p.id;
   },
   duplicate_project(args, owner) {
-    const src = tables.projects.find((p) => p.id === args.p_id && p.owner_id === owner);
+    const src = tables.projects.find((p) => p.id === args.p_id && readable("projects", p, owner));
     if (!src) throw new Error("project not found");
-    const p = insert("projects", { name: args.p_name, folder_id: src.folder_id, tags: [...src.tags], is_template: !!args.p_as_template, sheet: structuredClone(src.sheet) }, owner);
+    const club = args.p_club ?? null;
+    const folder = (src.club_id ?? null) === club ? src.folder_id : null;
+    const p = insert("projects", { name: args.p_name, folder_id: folder, club_id: club, tags: [...src.tags], is_template: !!args.p_as_template, sheet: structuredClone(src.sheet) }, owner);
     for (const b of tables.boards.filter((x) => x.project_id === src.id && !x.deleted_at)) {
       insert("boards", { project_id: p.id, name: b.name, notes: b.notes, video_url: b.video_url, scene: structuredClone(b.scene), sheet: structuredClone(b.sheet), position: b.position }, owner);
     }
@@ -110,7 +191,7 @@ const rpc = {
   search_projects(args, owner) {
     const q = String(args.q).toLowerCase();
     return tables.projects
-      .filter((p) => p.owner_id === owner && !p.deleted_at)
+      .filter((p) => readable("projects", p, owner) && !p.deleted_at && (p.club_id ?? null) === (args.p_club ?? null))
       .filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
@@ -121,7 +202,38 @@ const rpc = {
       )
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   },
+  create_club(args, owner) {
+    const club = insert("clubs", { name: args.p_name, created_by: owner }, owner, { check: false });
+    insert("club_members", { club_id: club.id, user_id: owner, role: "admin" }, owner, { check: false });
+    return club.id;
+  },
+  accept_invite(args, owner) {
+    const invite = tables.club_invites.find((i) => i.token === args.p_token);
+    if (!invite) throw new Error("invite_not_found");
+    if (roleOf(invite.club_id, owner)) return invite.club_id;
+    if (invite.revoked_at || invite.accepted_at || Date.parse(invite.expires_at) < Date.now()) throw new Error("invite_invalid");
+    insert("club_members", { club_id: invite.club_id, user_id: owner, role: invite.role }, owner, { check: false });
+    Object.assign(invite, { accepted_by: owner, accepted_at: stamp() });
+    return invite.club_id;
+  },
+  club_members_list(args, owner) {
+    if (!roleOf(args.p_club, owner)) return [];
+    const rank = { admin: 0, coach: 1, viewer: 2 };
+    return tables.club_members
+      .filter((m) => m.club_id === args.p_club)
+      .sort((a, b) => rank[a.role] - rank[b.role] || a.created_at.localeCompare(b.created_at))
+      .map((m) => ({ user_id: m.user_id, role: m.role, email: users.get(m.user_id) ?? "", display_name: null, created_at: m.created_at }));
+  },
 };
+
+/** Page d'invitation : ouverte sans compte. */
+function getInvite(token, uid) {
+  const invite = tables.club_invites.find((i) => i.token === token);
+  const club = invite && byId("clubs", invite.club_id);
+  if (!club) return null;
+  const status = invite.revoked_at ? "revoked" : invite.accepted_at ? "used" : Date.parse(invite.expires_at) < Date.now() ? "expired" : "valid";
+  return { club_id: club.id, club_name: club.name, role: invite.role, status, member: !!(uid && roleOf(club.id, uid)) };
+}
 
 function readRaw(req) {
   return new Promise((resolve) => {
@@ -219,6 +331,11 @@ const server = createServer(async (req, res) => {
       return send(200, { name: project.name, sheet: project.sheet, updated_at: project.updated_at, boards });
     }
 
+    if (path === "/rest/v1/rpc/get_invite") {
+      const { p_token } = await readBody(req);
+      return send(200, getInvite(p_token, userFromRequest(req)?.id));
+    }
+
     const user = userFromRequest(req);
     if (!user) return send(401, { message: "JWT manquant" });
     const owner = user.id;
@@ -229,7 +346,7 @@ const server = createServer(async (req, res) => {
       return send(
         200,
         paths.map((p) =>
-          p.startsWith(`${owner}/`) && files.has(p)
+          canReadFile(p, owner) && files.has(p)
             ? { path: p, signedURL: `/object/sign/player-photos/${p}?token=fake`, error: null }
             : { path: p, signedURL: null, error: "not found" },
         ),
@@ -238,14 +355,22 @@ const server = createServer(async (req, res) => {
     const upload = path.match(/^\/storage\/v1\/object\/player-photos\/(.+)$/);
     if (upload && req.method === "POST") {
       const key = decodeURIComponent(upload[1]);
-      if (!key.startsWith(`${owner}/`)) return send(403, { message: "new row violates row-level security policy" });
+      if (!canWriteFile(key, owner)) return send(403, { message: "new row violates row-level security policy" });
       files.set(key, firstFile(await readRaw(req), req.headers["content-type"]));
       return send(200, { Key: `player-photos/${key}`, Id: randomUUID() });
     }
     if (path === "/storage/v1/object/player-photos" && req.method === "DELETE") {
       const { prefixes } = await readBody(req);
-      const removed = prefixes.filter((p) => p.startsWith(`${owner}/`) && files.delete(p));
+      const removed = prefixes.filter((p) => canWriteFile(p, owner) && files.delete(p));
       return send(200, removed.map((name) => ({ name })));
+    }
+    if (path === "/storage/v1/object/copy" && req.method === "POST") {
+      const { sourceKey, destinationKey } = await readBody(req);
+      const file = files.get(sourceKey);
+      if (!file || !canReadFile(sourceKey, owner)) return send(404, { message: "absent" });
+      if (!canWriteFile(destinationKey, owner)) return send(403, { message: "new row violates row-level security policy" });
+      files.set(destinationKey, file);
+      return send(200, { Key: `player-photos/${destinationKey}` });
     }
 
     if (path.startsWith("/rest/v1/rpc/")) {
@@ -260,7 +385,7 @@ const server = createServer(async (req, res) => {
       const select = url.searchParams.get("select");
       const single = (req.headers.accept ?? "").includes("vnd.pgrst.object");
       const wantsRows = (req.headers.prefer ?? "").includes("return=representation");
-      const mine = () => tables[table].filter((r) => r.owner_id === owner && matches(r, url.searchParams));
+      const visible = () => tables[table].filter((r) => readable(table, r, owner) && matches(r, url.searchParams));
       const reply = (status, rows) => {
         const out = rows.map((r) => project(r, select));
         if (single) {
@@ -270,7 +395,7 @@ const server = createServer(async (req, res) => {
       };
 
       if (req.method === "GET") {
-        let rows = mine();
+        let rows = visible();
         for (const part of (url.searchParams.get("order") ?? "").split(",").filter(Boolean).reverse()) {
           const [col, dir] = part.split(".");
           rows = [...rows].sort((a, b) => {
@@ -287,19 +412,35 @@ const server = createServer(async (req, res) => {
         return wantsRows ? reply(201, rows) : send(201);
       }
       if (req.method === "PATCH") {
+        // Le créateur d'une ligne ne change jamais (déclencheur keep_owner de la vraie base).
         const patch = await readBody(req);
-        const rows = mine();
+        delete patch.owner_id;
+        const rows = visible().filter((r) => editable(table, r, owner));
         for (const row of rows) {
+          const next = { ...row, ...patch };
+          // La nouvelle version doit rester modifiable (WITH CHECK).
+          if (!editable(table, next, owner)) throw denied();
+          if (table === "club_members") keepAdmin(row, next.role);
+          if (table === "players" && next.photo_path !== row.photo_path) checkPhoto(next, owner);
+          if (table === "projects" && next.folder_id && byId("folders", next.folder_id)?.club_id !== next.club_id) throw denied();
           Object.assign(row, patch, { updated_at: stamp() });
           if (table === "boards") touchProject(row.project_id);
         }
         return wantsRows ? reply(200, rows) : send(204);
       }
       if (req.method === "DELETE") {
-        const rows = mine();
+        const rows = visible().filter((r) => deletable(table, r, owner));
+        if (table === "club_members") for (const row of rows) keepAdmin(row, null);
+        const doomed = new Set(rows);
+        tables[table] = tables[table].filter((r) => !doomed.has(r));
         const ids = new Set(rows.map((r) => r.id));
-        tables[table] = tables[table].filter((r) => !ids.has(r.id));
         if (table === "projects") tables.boards = tables.boards.filter((b) => !ids.has(b.project_id));
+        if (table === "clubs") {
+          // Comme ON DELETE CASCADE : membres, invitations et contenus du club disparaissent.
+          for (const t of ["club_members", "club_invites", "folders", "projects", "teams"]) {
+            tables[t] = tables[t].filter((r) => !ids.has(r.club_id));
+          }
+        }
         return wantsRows ? reply(200, rows) : send(204);
       }
     }

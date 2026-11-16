@@ -261,7 +261,7 @@ describe("étapes d'animation", () => {
 });
 
 describe("composition depuis l'effectif", () => {
-  const roster = { id: "r1", name: "U13 A", club: "", category: "U13", kit: { color: "#ff0000", pattern: "stripes" as const, color2: "#000000" }, created_at: "", updated_at: "", deleted_at: null };
+  const roster = { id: "r1", name: "U13 A", club: "", club_id: null, category: "U13", kit: { color: "#ff0000", pattern: "stripes" as const, color2: "#000000" }, created_at: "", updated_at: "", deleted_at: null };
   const mk = (id: string, position: "G" | "D" | "M" | "A", number: string, photo: string | null = null) => ({
     id, team_id: "r1", first_name: `P${id}`, last_name: "", number, position, foot: "" as const, notes: "", photo_path: photo,
   });
