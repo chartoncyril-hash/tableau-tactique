@@ -19,6 +19,9 @@ import { Toolbar } from "./ui/toolbar";
 import { Timeline } from "./ui/timeline";
 import { TopBar } from "./ui/top-bar";
 import { View3dOverlay } from "./three/view-3d-overlay";
+import { startCollab, stopCollab } from "./collab/session";
+import { watchBoard } from "./collab/comments";
+import { CommentsPanel } from "./collab/comments-panel";
 import { setViewMode, useView3d } from "./three/view-mode";
 
 const STORAGE_KEY = "tt:scene:v1";
@@ -62,6 +65,16 @@ export default function EditorApp({ projectId, boardId }: { projectId?: string; 
   // En quittant l'éditeur, on revient à la 2D pour la prochaine ouverture.
   useEffect(() => () => setViewMode("2d"), []);
   const projectStatus = useProject((s) => s.status);
+  // Édition à plusieurs : on rejoint le canal du projet une fois celui-ci chargé.
+  useEffect(() => {
+    if (!projectId || projectStatus !== "ready") return;
+    void startCollab(projectId);
+    const stopComments = watchBoard();
+    return () => {
+      stopComments();
+      stopCollab();
+    };
+  }, [projectId, projectStatus]);
 
   // Projet enregistré : la session gère le chargement et la sauvegarde en ligne.
   useEffect(() => {
@@ -209,6 +222,7 @@ export default function EditorApp({ projectId, boardId }: { projectId?: string; 
           <main className="relative min-h-0 min-w-0 flex-1">
             {ready && <EditorCanvas defaultText={t("newText")} />}
             <View3dOverlay />
+            {projectId && <CommentsPanel />}
           </main>
           <Timeline />
         </div>

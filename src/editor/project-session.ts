@@ -13,7 +13,8 @@ import { readDrillSheet, readSessionSheet, type DrillSheet, type SessionSheet } 
 import { createScene, migrateScene } from "./scene/defaults";
 import type { Scene } from "./scene/types";
 import { canEditRole, refreshClubs, roleIn, useWorkspace } from "@/lib/workspace";
-import { useEditor } from "./store";
+import { applyPatch, type ScenePatch } from "./collab/patch";
+import { applyingRemote, useEditor } from "./store";
 
 /** Lecteur d'un club : rien n'est écrit (les fonctions ci-dessous ne font alors rien). */
 const locked = () => useEditor.getState().readOnly;
@@ -86,6 +87,15 @@ let saving = false;
 let switching = false;
 let unsubscribe: (() => void) | undefined;
 let session = 0;
+
+/**
+ * Branchements de l'édition à plusieurs (src/editor/collab) : la session les remplit, ce module
+ * les appelle sans dépendre d'elle.
+ */
+export const sessionEvents = {
+  /** La liste des tableaux a changé ici (ajout, nom, ordre, suppression) : prévenir les autres. */
+  boardsChanged: () => {},
+};
 
 const patchBoard = (id: string, patch: Partial<BoardRow>) =>
   useProject.setState((s) => ({ boards: s.boards.map((b) => (b.id === id ? { ...b, ...patch } : b)) }));
@@ -162,7 +172,8 @@ export async function openProject(id: string, boardId?: string) {
     useEditor.setState({ hydrated: true });
 
     unsubscribe = useEditor.subscribe((state, previous) => {
-      if (switching || state.scene === previous.scene) return;
+      // Un changement reçu d'un autre entraîneur est enregistré par son auteur, pas ici.
+      if (switching || state.scene === previous.scene || applyingRemote()) return;
       const current = useProject.getState().currentId;
       if (!current) return;
       dirty.set(current, state.scene);
@@ -222,6 +233,7 @@ async function appendBoard(
   baseline.set(board.id, board.scene);
   useProject.setState((s) => ({ boards: [...s.boards, board] }));
   selectBoard(board.id);
+  sessionEvents.boardsChanged();
 }
 
 /** Nouveau tableau vide, avec le même terrain et les mêmes équipes que le tableau affiché. */
@@ -248,6 +260,7 @@ export async function renameBoard(id: string, name: string) {
   if (!clean) return;
   patchBoard(id, { name: clean });
   await updateBoard(id, { name: clean });
+  sessionEvents.boardsChanged();
 }
 
 export async function removeBoard(id: string) {
@@ -260,6 +273,7 @@ export async function removeBoard(id: string) {
   dirty.delete(id);
   useProject.setState((s) => ({ boards: s.boards.filter((b) => b.id !== id) }));
   await updateBoard(id, { deleted_at: new Date().toISOString() });
+  sessionEvents.boardsChanged();
 }
 
 /** Notes et lien vidéo : affichage immédiat, enregistrement différé. */
@@ -346,6 +360,7 @@ export async function moveBoard(id: string, delta: -1 | 1) {
         .map((b) => updateBoard(b.id, { position: b.position })),
     );
     useProject.setState({ saveState: dirty.size || metaTimers.size ? "dirty" : "saved" });
+    sessionEvents.boardsChanged();
   } catch {
     useProject.setState({ saveState: "error" });
   }
@@ -356,4 +371,45 @@ export function sessionSnapshot() {
   stashCurrent();
   const { project, boards } = useProject.getState();
   return project ? { name: project.name, sheet: project.sheet, boards } : null;
+}
+
+/** Change reçu pour un tableau du projet : affiché, il passe par l'éditeur ; sinon dans la liste. */
+export function applyRemoteBoard(boardId: string, patch: ScenePatch) {
+  const { currentId, boards } = useProject.getState();
+  if (boardId === currentId) {
+    useEditor.getState().applyRemote(patch);
+    // Nos modifications en attente partiront avec le changement reçu, pas sans lui.
+    if (dirty.has(boardId)) dirty.set(boardId, useEditor.getState().scene);
+    return;
+  }
+  const board = boards.find((b) => b.id === boardId);
+  if (!board) return;
+  patchBoard(boardId, { scene: applyPatch(board.scene, patch) });
+  const pending = dirty.get(boardId);
+  if (pending) dirty.set(boardId, applyPatch(pending, patch));
+}
+
+/** Un autre entraîneur a ajouté, renommé, déplacé ou supprimé un tableau : on relit la liste. */
+export async function reloadBoards() {
+  const { project } = useProject.getState();
+  if (!project) return;
+  const data = await loadProject(project.id);
+  if (!data || useProject.getState().project?.id !== project.id) return;
+  const { boards: local, currentId } = useProject.getState();
+  const known = new Map(local.map((b) => [b.id, b]));
+  const boards = data.boards.map((row) => {
+    const mine = known.get(row.id);
+    const fresh = { ...row, sheet: readDrillSheet(row.sheet), scene: migrateScene(row.scene) ?? createScene() };
+    if (!mine) {
+      baseline.set(row.id, fresh.scene);
+      return fresh;
+    }
+    // On garde notre scène (à jour en direct) ; le reste vient de la base.
+    return { ...fresh, scene: mine.scene };
+  });
+  useProject.setState({ boards });
+  if (currentId && !boards.some((b) => b.id === currentId) && boards[0]) {
+    useProject.setState({ currentId: boards[0].id });
+    showScene(boards[0].scene);
+  }
 }

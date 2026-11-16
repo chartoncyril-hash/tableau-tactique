@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { getPitch, toHorizontal, toVertical } from "./pitches";
 import { DEFAULT_STEP_DURATION, resolveStep } from "./scene/animation";
 import { createScene, DEFAULT_INK, LINE_STYLES, TEAM_COLORS } from "./scene/defaults";
+import { applyPatch, type ScenePatch } from "./collab/patch";
 import { facingFor, formationSlots, type FormationId } from "./scene/formations";
 import { assignLineup, shortName, type PlayerRow, type TeamRow } from "@/lib/roster";
 import { alignDeltas, distributeDeltas, type AlignMode } from "./scene/geometry";
@@ -30,7 +31,9 @@ export type Tool =
   | { type: "eraser" }
   | { type: "text"; label: boolean }
   | { type: "line"; kind: LineKind }
-  | { type: "freehand" };
+  | { type: "freehand" }
+  /** Placer l'épingle d'un commentaire sur le tableau. */
+  | { type: "comment" };
 
 export type ReorderMode = "front" | "back" | "forward" | "backward";
 
@@ -98,6 +101,8 @@ export interface EditorState {
   clearMoves: () => void;
   /** Remplace toute la scène en gardant l'historique (restauration d'une version). */
   replaceScene: (scene: Scene, label: string) => void;
+  /** Change reçu d'un autre entraîneur : appliqué partout, historique compris, sans entrée d'annulation. */
+  applyRemote: (patch: ScenePatch) => void;
 
   setTool: (tool: Tool) => void;
   setActiveTeam: (id: string) => void;
@@ -250,6 +255,10 @@ function produceAtStep(scene: Scene, step: number, recipe: (scene: Draft<Scene>)
 }
 
 const clampStep = (scene: Scene, step: number) => Math.min(Math.max(0, step), scene.frames?.length ?? 0);
+
+let remoteDepth = 0;
+/** Vrai pendant l'application d'un changement reçu : il ne doit être ni renvoyé ni réenregistré. */
+export const applyingRemote = () => remoteDepth > 0;
 
 export const useEditor = create<EditorState>()((set, get) => ({
   scene: createScene(),
@@ -420,6 +429,26 @@ export const useEditor = create<EditorState>()((set, get) => ({
       undefined,
       true,
     );
+  },
+
+  applyRemote(patch) {
+    const { scene, past, future, liveBase, selection } = get();
+    const rebase = (e: HistoryEntry) => ({ ...e, before: applyPatch(e.before, patch), after: applyPatch(e.after, patch) });
+    remoteDepth++;
+    try {
+      const next = applyPatch(scene, patch);
+      const ids = new Set(next.objects.map((o) => o.id));
+      set({
+        scene: next,
+        past: past.map(rebase),
+        future: future.map(rebase),
+        liveBase: liveBase ? applyPatch(liveBase, patch) : null,
+        selection: selection.filter((id) => ids.has(id)),
+        currentStep: clampStep(next, get().currentStep),
+      });
+    } finally {
+      remoteDepth--;
+    }
   },
 
   replaceScene(scene, label) {
