@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,10 @@ import { createClient } from "@/lib/supabase/client";
 import { isGoogleAuthEnabled } from "@/lib/supabase/env";
 
 type Mode = "login" | "signup";
+
+const noop = () => () => {};
+/** Faux pendant le rendu serveur, vrai une fois le composant actif dans le navigateur. */
+const useHydrated = () => useSyncExternalStore(noop, () => true, () => false);
 type Notice = { kind: "error" | "success"; text: string } | null;
 
 export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: boolean }) {
@@ -17,6 +21,8 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
   const locale = useLocale();
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  // Tant que la page n'est pas active, un envoi partirait en rechargement natif : on l'empêche.
+  const hydrated = useHydrated();
   const [notice, setNotice] = useState<Notice>(
     initialError ? { kind: "error", text: t("errorCallback") } : null,
   );
@@ -94,7 +100,7 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
 
   return (
     <div className="flex flex-col gap-5">
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate={false}>
+      <form onSubmit={onSubmit} method="post" className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t("email")}</Label>
           <Input id="email" name="email" type="email" autoComplete="email" required />
@@ -129,7 +135,7 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
         >
           {notice?.text}
         </p>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || !hydrated}>
           {mode === "login" ? t("submitLogin") : t("submitSignup")}
         </Button>
       </form>

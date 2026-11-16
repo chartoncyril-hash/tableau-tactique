@@ -70,10 +70,9 @@
     "errorGeneric": "Une erreur est survenue. Réessayez dans un instant."
   },
   "app": {
-    "title": "Mon espace",
     "welcome": "Bienvenue, {email}",
-    "empty": "La sauvegarde de vos projets en ligne arrive à l'étape suivante. En attendant, l'éditeur garde un brouillon sur cet appareil.",
-    "openEditor": "Ouvrir l'éditeur"
+    "demoEditor": "Éditeur de démonstration",
+    "title": "Mes projets"
   },
   "editor": {
     "title": "Éditeur",
@@ -238,7 +237,8 @@
         "stripes": "Rayures",
         "hoops": "Cerclé",
         "halves": "Mi-parti"
-      }
+      },
+      "onlineSave": "Enregistré en ligne automatiquement."
     },
     "bank": {
       "categories": {
@@ -265,6 +265,116 @@
       "thin": "Trait fin",
       "medium": "Trait moyen",
       "thick": "Trait épais"
+    },
+    "project": {
+      "name": "Nom du projet",
+      "boards": "Tableaux",
+      "boardDefault": "Tableau {n}",
+      "copyName": "{name} (copie)",
+      "addBoard": "Ajouter un tableau",
+      "renameBoard": "Renommer le tableau",
+      "duplicateBoard": "Dupliquer le tableau",
+      "deleteBoard": "Supprimer le tableau",
+      "save": {
+        "saved": "Enregistré",
+        "dirty": "Modifications en attente",
+        "saving": "Enregistrement…",
+        "error": "Échec de l'enregistrement, nouvel essai en cours"
+      },
+      "notes": "Notes",
+      "notesPlaceholder": "Consignes, objectifs, variantes…",
+      "video": "Lien vidéo",
+      "videoPlaceholder": "Lien YouTube ou Vimeo",
+      "videoInvalid": "Ce lien n'est pas une vidéo YouTube ou Vimeo reconnue.",
+      "versions": "Versions",
+      "showVersions": "Afficher les versions",
+      "hideVersions": "Masquer les versions",
+      "noVersions": "Aucune version pour ce tableau.",
+      "restore": "Restaurer",
+      "versionHint": "Une version est gardée à l'ouverture, puis toutes les 5 minutes de travail. La restauration peut être annulée.",
+      "missingTitle": "Projet introuvable",
+      "missingBody": "Ce projet n'existe pas, a été supprimé ou n'est pas à vous.",
+      "errorTitle": "Chargement impossible",
+      "errorBody": "Vérifiez votre connexion puis réessayez.",
+      "backToProjects": "Retour aux projets"
+    }
+  },
+  "dash": {
+    "title": "Mes projets",
+    "newProject": "Nouveau projet",
+    "newProjectName": "Projet sans titre",
+    "search": "Rechercher un projet, une étiquette, une note",
+    "filtersLabel": "Filtres",
+    "filters": {
+      "all": "Tous les projets",
+      "favorites": "Favoris",
+      "templates": "Modèles",
+      "trash": "Corbeille"
+    },
+    "newFolder": "Nouveau dossier",
+    "rename": "Renommer",
+    "deleteFolder": "Supprimer le dossier",
+    "results": "Résultats pour « {query} »",
+    "loading": "Chargement…",
+    "error": "L'opération a échoué. Vérifiez votre connexion puis réessayez.",
+    "empty": "Aucun projet ici pour l'instant. Créez-en un pour commencer.",
+    "emptySearch": "Aucun projet ne correspond à cette recherche.",
+    "emptyTrash": "La corbeille est vide.",
+    "trashHint": "Les projets supprimés restent {days} jours ici avant d'être effacés définitivement.",
+    "daysLeft": "{days, plural, =0 {Effacé aujourd'hui} one {Effacé dans # jour} other {Effacé dans # jours}}",
+    "updated": "Modifié le {date}",
+    "templateHint": "Modèle : ouvre une copie",
+    "favorite": "Ajouter aux favoris",
+    "unfavorite": "Retirer des favoris",
+    "restore": "Restaurer",
+    "purge": "Supprimer définitivement",
+    "actions": "Actions pour {name}",
+    "editTags": "Étiquettes",
+    "move": "Déplacer dans un dossier",
+    "duplicate": "Dupliquer",
+    "saveAsTemplate": "Enregistrer comme modèle",
+    "trash": "Mettre à la corbeille",
+    "copyName": "{name} (copie)",
+    "noFolder": "Aucun dossier",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "dialogs": {
+      "rename": {
+        "title": "Renommer le projet",
+        "field": "Nom du projet",
+        "confirm": "Renommer"
+      },
+      "tags": {
+        "title": "Étiquettes",
+        "field": "Étiquettes",
+        "body": "Séparez les étiquettes par des virgules.",
+        "confirm": "Enregistrer"
+      },
+      "move": {
+        "title": "Déplacer dans un dossier",
+        "confirm": "Déplacer"
+      },
+      "newFolder": {
+        "title": "Nouveau dossier",
+        "field": "Nom du dossier",
+        "confirm": "Créer"
+      },
+      "renameFolder": {
+        "title": "Renommer le dossier",
+        "field": "Nom du dossier",
+        "confirm": "Renommer"
+      },
+      "deleteFolder": {
+        "title": "Supprimer le dossier",
+        "field": "Nom du dossier",
+        "body": "Le dossier « {name} » et tous ses projets iront à la corbeille. Saisissez le nom du dossier pour confirmer.",
+        "confirm": "Supprimer le dossier"
+      },
+      "purge": {
+        "title": "Supprimer définitivement",
+        "body": "« {name} » sera effacé pour de bon, avec tous ses tableaux. Cette action est irréversible.",
+        "confirm": "Supprimer définitivement"
+      }
     }
   }
 }

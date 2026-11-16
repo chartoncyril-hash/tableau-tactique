@@ -70,10 +70,9 @@
     "errorGeneric": "Something went wrong. Please try again shortly."
   },
   "app": {
-    "title": "My space",
     "welcome": "Welcome, {email}",
-    "empty": "Online saving of your projects comes in the next stage. Until then, the editor keeps a draft on this device.",
-    "openEditor": "Open the editor"
+    "demoEditor": "Demo editor",
+    "title": "My projects"
   },
   "editor": {
     "title": "Editor",
@@ -238,7 +237,8 @@
         "stripes": "Stripes",
         "hoops": "Hoops",
         "halves": "Halves"
-      }
+      },
+      "onlineSave": "Saved online automatically."
     },
     "bank": {
       "categories": {
@@ -265,6 +265,116 @@
       "thin": "Thin line",
       "medium": "Medium line",
       "thick": "Thick line"
+    },
+    "project": {
+      "name": "Project name",
+      "boards": "Boards",
+      "boardDefault": "Board {n}",
+      "copyName": "{name} (copy)",
+      "addBoard": "Add a board",
+      "renameBoard": "Rename board",
+      "duplicateBoard": "Duplicate board",
+      "deleteBoard": "Delete board",
+      "save": {
+        "saved": "Saved",
+        "dirty": "Unsaved changes",
+        "saving": "Saving…",
+        "error": "Saving failed, retrying"
+      },
+      "notes": "Notes",
+      "notesPlaceholder": "Instructions, objectives, variations…",
+      "video": "Video link",
+      "videoPlaceholder": "YouTube or Vimeo link",
+      "videoInvalid": "This link is not a recognised YouTube or Vimeo video.",
+      "versions": "Versions",
+      "showVersions": "Show versions",
+      "hideVersions": "Hide versions",
+      "noVersions": "No versions for this board.",
+      "restore": "Restore",
+      "versionHint": "A version is kept when you open the board, then every 5 minutes of work. Restoring can be undone.",
+      "missingTitle": "Project not found",
+      "missingBody": "This project does not exist, was deleted, or is not yours.",
+      "errorTitle": "Could not load",
+      "errorBody": "Check your connection and try again.",
+      "backToProjects": "Back to projects"
+    }
+  },
+  "dash": {
+    "title": "My projects",
+    "newProject": "New project",
+    "newProjectName": "Untitled project",
+    "search": "Search a project, tag or note",
+    "filtersLabel": "Filters",
+    "filters": {
+      "all": "All projects",
+      "favorites": "Favourites",
+      "templates": "Templates",
+      "trash": "Trash"
+    },
+    "newFolder": "New folder",
+    "rename": "Rename",
+    "deleteFolder": "Delete folder",
+    "results": "Results for “{query}”",
+    "loading": "Loading…",
+    "error": "The operation failed. Check your connection and try again.",
+    "empty": "No projects here yet. Create one to get started.",
+    "emptySearch": "No project matches this search.",
+    "emptyTrash": "The trash is empty.",
+    "trashHint": "Deleted projects stay here for {days} days before being erased for good.",
+    "daysLeft": "{days, plural, =0 {Erased today} one {Erased in # day} other {Erased in # days}}",
+    "updated": "Edited {date}",
+    "templateHint": "Template: opens a copy",
+    "favorite": "Add to favourites",
+    "unfavorite": "Remove from favourites",
+    "restore": "Restore",
+    "purge": "Delete permanently",
+    "actions": "Actions for {name}",
+    "editTags": "Tags",
+    "move": "Move to a folder",
+    "duplicate": "Duplicate",
+    "saveAsTemplate": "Save as template",
+    "trash": "Move to trash",
+    "copyName": "{name} (copy)",
+    "noFolder": "No folder",
+    "cancel": "Cancel",
+    "close": "Close",
+    "dialogs": {
+      "rename": {
+        "title": "Rename project",
+        "field": "Project name",
+        "confirm": "Rename"
+      },
+      "tags": {
+        "title": "Tags",
+        "field": "Tags",
+        "body": "Separate tags with commas.",
+        "confirm": "Save"
+      },
+      "move": {
+        "title": "Move to a folder",
+        "confirm": "Move"
+      },
+      "newFolder": {
+        "title": "New folder",
+        "field": "Folder name",
+        "confirm": "Create"
+      },
+      "renameFolder": {
+        "title": "Rename folder",
+        "field": "Folder name",
+        "confirm": "Rename"
+      },
+      "deleteFolder": {
+        "title": "Delete folder",
+        "field": "Folder name",
+        "body": "The folder “{name}” and all its projects will go to the trash. Type the folder name to confirm.",
+        "confirm": "Delete folder"
+      },
+      "purge": {
+        "title": "Delete permanently",
+        "body": "“{name}” will be erased for good, with all its boards. This cannot be undone.",
+        "confirm": "Delete permanently"
+      }
     }
   }
 }
