@@ -369,6 +369,21 @@
       "done": "File downloaded: {name}",
       "failed": "The export failed. Please try again.",
       "videoUnsupported": "This browser cannot create videos. Try GIF, or a recent browser (Chrome, Edge, Safari)."
+    },
+    "view3d": {
+      "toggle": "3D view",
+      "toggle2d": "Back to 2D view",
+      "label": "3D view of the board",
+      "cameras": "Viewpoint",
+      "camera": {
+        "broadcast": "Stand",
+        "top": "Top",
+        "goal": "Behind the goal",
+        "corner": "Corner"
+      },
+      "readOnly": "Read-only 3D view: drag to orbit, pinch or scroll to zoom. Switch back to 2D to edit.",
+      "loading": "Loading the 3D view…",
+      "unsupported": "This device cannot display 3D (WebGL unavailable). The 2D view and exports are still available."
     }
   },
   "dash": {

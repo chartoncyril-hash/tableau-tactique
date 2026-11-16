@@ -749,7 +749,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
 
   // --- Animation -------------------------------------------------------------
   useEffect(() => {
-    playbackTarget.render = (poses) => {
+    return playbackTarget.listen((poses) => {
       const layer = objectsRef.current;
       if (!layer) return;
       const target = poses ?? restingPoses();
@@ -765,10 +765,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
         }
       }
       layer.batchDraw();
-    };
-    return () => {
-      playbackTarget.render = () => {};
-    };
+    });
   }, []);
 
   const traceStep = previewing ? playingStep : step;

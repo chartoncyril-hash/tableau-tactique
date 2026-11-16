@@ -18,6 +18,8 @@ import { Panel } from "./ui/panel";
 import { Toolbar } from "./ui/toolbar";
 import { Timeline } from "./ui/timeline";
 import { TopBar } from "./ui/top-bar";
+import { View3dOverlay } from "./three/view-3d-overlay";
+import { setViewMode, useView3d } from "./three/view-mode";
 
 const STORAGE_KEY = "tt:scene:v1";
 
@@ -55,6 +57,9 @@ export default function EditorApp({ projectId, boardId }: { projectId?: string; 
   const t = useTranslations("editor");
   const ready = useEditor((s) => s.hydrated);
   const [panelOpen, setPanelOpen] = useState(false);
+  const viewMode = useView3d((s) => s.mode);
+  // En quittant l'éditeur, on revient à la 2D pour la prochaine ouverture.
+  useEffect(() => () => setViewMode("2d"), []);
   const projectStatus = useProject((s) => s.status);
 
   // Projet enregistré : la session gère le chargement et la sauvegarde en ligne.
@@ -113,6 +118,14 @@ export default function EditorApp({ projectId, boardId }: { projectId?: string; 
       }
       const s = useEditor.getState();
       const mod = e.ctrlKey || e.metaKey;
+      // Vue 3D en lecture : seuls annuler / rétablir et Échap (retour en 2D) restent actifs.
+      if (useView3d.getState().mode === "3d") {
+        if (e.key === "Escape") setViewMode("2d");
+        else if (mod && e.key.toLowerCase() === "z") (e.shiftKey ? s.redo : s.undo)();
+        else return;
+        e.preventDefault();
+        return;
+      }
       const key = e.key.toLowerCase();
       let handled = true;
 
@@ -174,10 +187,11 @@ export default function EditorApp({ projectId, boardId }: { projectId?: string; 
       <TopBar project={!!projectId} panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
       {projectId && projectStatus === "ready" && <BoardTabs />}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <Toolbar />
+        {viewMode === "2d" && <Toolbar />}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main className="relative min-h-0 min-w-0 flex-1">
             {ready && <EditorCanvas defaultText={t("newText")} />}
+            <View3dOverlay />
           </main>
           <Timeline />
         </div>

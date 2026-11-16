@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  Box,
   Cloud,
   CloudOff,
   FileText,
@@ -21,6 +22,7 @@ import { useEditor } from "../store";
 import { cn } from "@/lib/utils";
 import { IconButton } from "./controls";
 import { ExportButton } from "./export-dialog";
+import { setViewMode, useView3d } from "../three/view-mode";
 
 function ProjectTitle() {
   const t = useTranslations("editor.project");
@@ -89,6 +91,7 @@ export function TopBar({
   const redo = useEditor((s) => s.redo);
   const count = useEditor((s) => s.scene.objects.length);
   const zoom = useView((s) => s.zoom);
+  const view3d = useView3d((s) => s.mode === "3d");
 
   return (
     <header className="z-30 flex h-14 shrink-0 items-center gap-1 border-b bg-card px-1.5">
@@ -114,10 +117,19 @@ export function TopBar({
       <IconButton icon={Undo2} label={t("undo")} disabled={!canUndo} onClick={undo} />
       <IconButton icon={Redo2} label={t("redo")} disabled={!canRedo} onClick={redo} />
       <span className="mx-1 hidden h-6 w-px bg-border sm:block" />
-      <IconButton icon={ZoomOut} label={t("zoomOut")} className="hidden sm:inline-flex" onClick={() => canvasApi.zoomBy(1 / 1.25)} />
+      <IconButton icon={ZoomOut} label={t("zoomOut")} disabled={view3d} className="hidden sm:inline-flex" onClick={() => canvasApi.zoomBy(1 / 1.25)} />
       <span className="hidden w-12 text-center text-xs text-muted-foreground tabular-nums sm:block">{zoom} %</span>
-      <IconButton icon={ZoomIn} label={t("zoomIn")} className="hidden sm:inline-flex" onClick={() => canvasApi.zoomBy(1.25)} />
-      <IconButton icon={Maximize} label={t("fit")} onClick={() => canvasApi.fit()} />
+      <IconButton icon={ZoomIn} label={t("zoomIn")} disabled={view3d} className="hidden sm:inline-flex" onClick={() => canvasApi.zoomBy(1.25)} />
+      <IconButton icon={Maximize} label={t("fit")} disabled={view3d} onClick={() => canvasApi.fit()} />
+      <IconButton
+        icon={Box}
+        label={t("view3d.toggle")}
+        active={view3d}
+        onClick={() => {
+          useEditor.getState().select([]);
+          setViewMode(view3d ? "2d" : "3d");
+        }}
+      />
       <ExportButton />
       <IconButton
         icon={SlidersHorizontal}

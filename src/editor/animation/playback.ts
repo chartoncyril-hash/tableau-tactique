@@ -26,9 +26,23 @@ export const usePlayback = create<PlaybackState>(() => ({
   traces: true,
 }));
 
-/** Le canevas y branche son rendu : une carte de poses, ou null pour revenir à l'étape affichée. */
-export const playbackTarget: { render: (poses: Map<string, Pose> | null) => void } = {
-  render: () => {},
+type PoseListener = (poses: Map<string, Pose> | null) => void;
+const listeners = new Set<PoseListener>();
+
+/**
+ * Les vues (canevas 2D, vue 3D) s'y abonnent : une carte de poses à chaque image, ou null pour
+ * revenir à l'étape affichée. `listen` renvoie la fonction de désabonnement.
+ */
+export const playbackTarget = {
+  render(poses: Map<string, Pose> | null) {
+    for (const listener of listeners) listener(poses);
+  },
+  listen(listener: PoseListener) {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  },
 };
 
 let raf = 0;

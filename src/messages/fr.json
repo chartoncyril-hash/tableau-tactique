@@ -369,6 +369,21 @@
       "done": "Fichier téléchargé : {name}",
       "failed": "L'export a échoué. Réessayez.",
       "videoUnsupported": "Ce navigateur ne sait pas créer de vidéo. Essayez le GIF, ou un navigateur récent (Chrome, Edge, Safari)."
+    },
+    "view3d": {
+      "toggle": "Vue 3D",
+      "toggle2d": "Revenir à la vue 2D",
+      "label": "Vue 3D du tableau",
+      "cameras": "Point de vue",
+      "camera": {
+        "broadcast": "Tribune",
+        "top": "Dessus",
+        "goal": "Derrière le but",
+        "corner": "Coin"
+      },
+      "readOnly": "Vue 3D en lecture : faites glisser pour tourner, pincez ou molette pour zoomer. Repassez en 2D pour modifier.",
+      "loading": "Chargement de la vue 3D…",
+      "unsupported": "Cet appareil ne permet pas l'affichage 3D (WebGL indisponible). La vue 2D et les exports restent disponibles."
     }
   },
   "dash": {
