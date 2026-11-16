@@ -3,7 +3,7 @@
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { memo } from "react";
-import { Arrow, Circle, Ellipse, Group, Line, Path, Rect, Text } from "react-konva";
+import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Line, Path, Rect, Text } from "react-konva";
 import { BALL_SIZE, ballPrims, EQUIPMENT_SIZE, equipmentPrims, type Prim } from "../scene/catalog";
 import { arrowHead, endBar, objectBox, offsetPolyline, PLAYER_RADIUS, sampleLine } from "../scene/geometry";
 import type { SceneObject, Team } from "../scene/types";
@@ -71,6 +71,8 @@ export interface NodeHandlers {
 interface Props {
   obj: SceneObject;
   team: Team | undefined;
+  /** Photo chargée du joueur, s'il en a une. */
+  photo?: HTMLImageElement;
   ink: string;
   draggable: boolean;
   handlers: NodeHandlers;
@@ -144,7 +146,7 @@ function Prims({ prims, w, h }: { prims: Prim[]; w: number; h: number }) {
   );
 }
 
-function Shape({ obj, team, ink }: Pick<Props, "obj" | "team" | "ink">) {
+function Shape({ obj, team, ink, photo }: Pick<Props, "obj" | "team" | "ink" | "photo">) {
   switch (obj.type) {
     case "player": {
       const R = PLAYER_RADIUS;
@@ -162,7 +164,38 @@ function Shape({ obj, team, ink }: Pick<Props, "obj" | "team" | "ink">) {
           ) : (
             <Circle radius={R} {...fill} stroke="#fff" strokeWidth={0.22} {...flat} />
           )}
+          {photo && obj.look !== "jersey" && (
+            <>
+              {/* Photo ronde, cerclée aux couleurs de l'équipe ; le numéro passe en pastille. */}
+              <Group
+                listening={false}
+                clipFunc={(ctx) => {
+                  ctx.arc(0, 0, R - 0.2, 0, Math.PI * 2);
+                }}
+              >
+                <KonvaImage image={photo} x={-R} y={-R} width={R * 2} height={R * 2} />
+              </Group>
+              <Circle radius={R - 0.1} stroke={color} strokeWidth={0.32} listening={false} />
+              <Circle x={R * 0.78} y={R * 0.78} radius={0.75} fill={color} stroke="#fff" strokeWidth={0.1} listening={false} />
+              <Text
+                text={obj.number}
+                x={R * 0.78}
+                y={R * 0.78}
+                fontSize={0.85}
+                fontStyle="bold"
+                fill={contrastOn(color)}
+                width={1.5}
+                height={1.5}
+                offsetX={0.75}
+                offsetY={0.7}
+                align="center"
+                verticalAlign="middle"
+                listening={false}
+              />
+            </>
+          )}
           <Text
+            visible={!(photo && obj.look !== "jersey")}
             text={obj.number}
             fontSize={1.7}
             fontStyle="bold"
@@ -353,7 +386,7 @@ function Shape({ obj, team, ink }: Pick<Props, "obj" | "team" | "ink">) {
 }
 
 /** Un objet de la scène. Mémoïsé : seul un objet modifié est rendu à nouveau. */
-export const ObjectNode = memo(function ObjectNode({ obj, team, ink, draggable, handlers }: Props) {
+export const ObjectNode = memo(function ObjectNode({ obj, team, ink, photo, draggable, handlers }: Props) {
   const scale = obj.type === "equipment" ? obj.scale : 1;
   return (
     <Group
@@ -370,7 +403,7 @@ export const ObjectNode = memo(function ObjectNode({ obj, team, ink, draggable, 
       onDragMove={handlers.onDragMove}
       onDragEnd={handlers.onDragEnd}
     >
-      <Shape obj={obj} team={team} ink={ink} />
+      <Shape obj={obj} team={team} ink={ink} photo={photo} />
     </Group>
   );
 });

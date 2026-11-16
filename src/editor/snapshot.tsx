@@ -4,6 +4,7 @@ import type Konva from "konva";
 import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { Arrow, Layer, Rect, Stage } from "react-konva";
+import { ensurePhotos, usePhotos } from "@/lib/photos";
 import { ObjectNode, type NodeHandlers } from "./canvas/object-node";
 import { PitchLayer } from "./canvas/pitch-layer";
 import { viewRect } from "./pitches";
@@ -131,6 +132,7 @@ function SnapshotStage({
       })
     : scene.objects;
   const teams = new Map(scene.teams.map((t) => [t.id, t]));
+  const photos = usePhotos.getState().images;
   const arrows = stepArrows(scene, step);
 
   useEffect(() => {
@@ -178,6 +180,7 @@ function SnapshotStage({
             key={obj.id}
             obj={obj}
             team={obj.type === "player" ? teams.get(obj.teamId) : undefined}
+            photo={obj.type === "player" && obj.photo ? photos[obj.photo] : undefined}
             ink={scene.pitch.lines}
             draggable={false}
             handlers={handlers}
@@ -189,7 +192,9 @@ function SnapshotStage({
 }
 
 /** Image JPEG d'un tableau, à la largeur demandée (en pixels, avant suréchantillonnage ×2). */
-export function renderDiagram(scene: Scene, step: number, width = 900): Promise<string> {
+export async function renderDiagram(scene: Scene, step: number, width = 900): Promise<string> {
+  // Les photos des joueurs doivent être chargées avant le rendu hors écran.
+  await ensurePhotos(scene.objects.flatMap((o) => (o.type === "player" && o.photo ? [o.photo] : [])));
   return new Promise((resolve, reject) => {
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");

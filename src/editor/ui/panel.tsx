@@ -38,6 +38,7 @@ import {
 import { useProject } from "../project-session";
 import { useEditor } from "../store";
 import { ProjectSections } from "./project-sections";
+import { RosterCompose, RosterPlayerField } from "./roster-section";
 import { Check, ColorInput, Field, IconButton, Range, Section, Select, TextInput } from "./controls";
 
 const VIEWS: PitchView[] = ["full", "half", "third", "box", "blank"];
@@ -131,6 +132,7 @@ function SelectionSection({ objects }: { objects: SceneObject[] }) {
               <option value="jersey">{tEditor("looks.jersey")}</option>
             </Select>
           </Field>
+          {objects.length === 1 && <RosterPlayerField player={first} />}
           <Check
             label={t("isCaptain")}
             checked={!!first.captain}
@@ -486,6 +488,7 @@ export function Panel() {
             </Button>
           ))}
         </div>
+        <RosterCompose formation={formation} />
       </Section>
 
       <Section title={t("analysis")}>
