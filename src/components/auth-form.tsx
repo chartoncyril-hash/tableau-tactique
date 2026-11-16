@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,19 +13,30 @@ type Mode = "login" | "signup";
 
 const noop = () => () => {};
 /** Faux pendant le rendu serveur, vrai une fois le composant actif dans le navigateur. */
-const useHydrated = () => useSyncExternalStore(noop, () => true, () => false);
+const useHydrated = () =>
+  useSyncExternalStore(
+    noop,
+    () => true,
+    () => false,
+  );
 type Notice = { kind: "error" | "success"; text: string } | null;
 
-export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: boolean }) {
+export function AuthForm({ mode }: { mode: Mode }) {
   const t = useTranslations("auth");
   const locale = useLocale();
   const router = useRouter();
   const [pending, setPending] = useState(false);
   // Tant que la page n'est pas active, un envoi partirait en rechargement natif : on l'empêche.
   const hydrated = useHydrated();
-  const [notice, setNotice] = useState<Notice>(
-    initialError ? { kind: "error", text: t("errorCallback") } : null,
-  );
+  const [notice, setNotice] = useState<Notice>(null);
+
+  // Retour d'un lien de connexion invalide (`?error=callback`), lu dans le navigateur.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "callback") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- information disponible seulement après le chargement
+      setNotice({ kind: "error", text: t("errorCallback") });
+    }
+  }, [t]);
 
   const callbackUrl = () =>
     `${window.location.origin}/auth/callback?next=/${locale}/app`;
@@ -48,13 +59,16 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
     try {
       const supabase = createClient();
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) {
           setNotice({ kind: "error", text: describe(error.code) });
           return;
         }
+        // Pas de refresh juste après : il peut annuler la navigation. La page cible est rendue à la requête.
         router.replace("/app");
-        router.refresh();
         return;
       }
 
@@ -68,8 +82,8 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
         return;
       }
       if (data.session) {
+        // Pas de refresh juste après : il peut annuler la navigation. La page cible est rendue à la requête.
         router.replace("/app");
-        router.refresh();
         return;
       }
       // Supabase renvoie un utilisateur sans identité si l'adresse existe déjà.
@@ -103,7 +117,13 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
       <form onSubmit={onSubmit} method="post" className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t("email")}</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+          />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">{t("password")}</Label>
@@ -111,7 +131,9 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
             id="password"
             name="password"
             type="password"
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
             minLength={mode === "signup" ? 8 : undefined}
             aria-describedby={mode === "signup" ? "password-hint" : undefined}
             required
@@ -147,7 +169,12 @@ export function AuthForm({ mode, initialError }: { mode: Mode; initialError?: bo
             {t("or")}
             <span className="h-px flex-1 bg-border" />
           </div>
-          <Button type="button" variant="outline" onClick={onGoogle} disabled={pending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onGoogle}
+            disabled={pending}
+          >
             {t("google")}
           </Button>
         </>

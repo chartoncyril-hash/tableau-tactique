@@ -16,9 +16,7 @@ import {
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { canvasApi, useView } from "../canvas/editor-canvas";
-import { useState } from "react";
 import { renameProject, useProject } from "../project-session";
-import { SessionDialog } from "./session-dialog";
 import { useEditor } from "../store";
 import { cn } from "@/lib/utils";
 import { IconButton } from "./controls";
@@ -61,20 +59,16 @@ function ProjectTitle() {
 
 function SessionButton() {
   const t = useTranslations("sheet");
-  const [open, setOpen] = useState(false);
+  const id = useProject((s) => s.project?.id);
+  if (!id) return null;
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex h-11 shrink-0 items-center gap-2 rounded-md px-2.5 text-sm font-medium hover:bg-muted"
-        aria-haspopup="dialog"
-      >
-        <FileText className="size-5" aria-hidden />
-        <span className="sr-only lg:not-sr-only">{t("open")}</span>
-      </button>
-      {open && <SessionDialog onClose={() => setOpen(false)} />}
-    </>
+    <Link
+      href={{ pathname: "/app/project/sheet", query: { id } }}
+      className="inline-flex h-11 shrink-0 items-center gap-2 rounded-md px-2.5 text-sm font-medium hover:bg-muted"
+    >
+      <FileText className="size-5" aria-hidden />
+      <span className="sr-only lg:not-sr-only">{t("open")}</span>
+    </Link>
   );
 }
 

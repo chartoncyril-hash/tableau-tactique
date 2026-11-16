@@ -517,5 +517,30 @@
     "steps": "Étapes",
     "start": "Départ",
     "readOnly": "Séance partagée en lecture seule."
+  },
+  "sheetPage": {
+    "title": "Fiche de séance",
+    "backToEditor": "Retour à l'éditeur",
+    "color": "Couleur de la fiche",
+    "fields": {
+      "club": "Club",
+      "coach": "Entraîneur"
+    },
+    "principlePlaceholder": "Ex. Conserver / Progresser",
+    "addCell": "+ ajouter une case",
+    "noEquipment": "Aucun matériel sur les schémas",
+    "noPlayers": "Aucun joueur sur les schémas",
+    "legendHint": "Le matériel et l'effectif se déduisent des schémas : ajoutez des objets dans l'éditeur pour les compléter.",
+    "exercise": "Exercice {n}",
+    "exerciseName": "Nom de l'exercice",
+    "moveUp": "Monter l'exercice",
+    "moveDown": "Descendre l'exercice",
+    "deleteExercise": "Supprimer l'exercice",
+    "confirmDelete": "Confirmer la suppression",
+    "editDiagram": "Modifier le schéma",
+    "emptyDiagram": "Schéma vide : ouvrez l'éditeur pour placer joueurs et matériel.",
+    "diagramAlt": "Schéma {n} de l'exercice",
+    "addExercise": "Ajouter un exercice",
+    "footerHint": "Tout est enregistré automatiquement et reste modifiable : le PDF et le lien de partage reprennent toujours la dernière version."
   }
 }

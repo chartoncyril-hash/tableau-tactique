@@ -517,5 +517,30 @@
     "steps": "Steps",
     "start": "Start",
     "readOnly": "Session shared read-only."
+  },
+  "sheetPage": {
+    "title": "Session sheet",
+    "backToEditor": "Back to the editor",
+    "color": "Sheet colour",
+    "fields": {
+      "club": "Club",
+      "coach": "Coach"
+    },
+    "principlePlaceholder": "E.g. Keep / Progress",
+    "addCell": "+ add a box",
+    "noEquipment": "No equipment on the diagrams",
+    "noPlayers": "No players on the diagrams",
+    "legendHint": "Equipment and squad come from the diagrams: add objects in the editor to fill them in.",
+    "exercise": "Drill {n}",
+    "exerciseName": "Drill name",
+    "moveUp": "Move drill up",
+    "moveDown": "Move drill down",
+    "deleteExercise": "Delete drill",
+    "confirmDelete": "Confirm deletion",
+    "editDiagram": "Edit diagram",
+    "emptyDiagram": "Empty diagram: open the editor to place players and equipment.",
+    "diagramAlt": "Drill diagram {n}",
+    "addExercise": "Add a drill",
+    "footerHint": "Everything saves automatically and stays editable: the PDF and share link always use the latest version."
   }
 }

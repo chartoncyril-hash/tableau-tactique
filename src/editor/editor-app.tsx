@@ -51,7 +51,7 @@ function stressObjects(count: number): SceneObject[] {
   }));
 }
 
-export default function EditorApp({ projectId }: { projectId?: string }) {
+export default function EditorApp({ projectId, boardId }: { projectId?: string; boardId?: string }) {
   const t = useTranslations("editor");
   const ready = useEditor((s) => s.hydrated);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -60,9 +60,9 @@ export default function EditorApp({ projectId }: { projectId?: string }) {
   // Projet enregistré : la session gère le chargement et la sauvegarde en ligne.
   useEffect(() => {
     if (!projectId) return;
-    void openProject(projectId);
+    void openProject(projectId, boardId);
     return closeProject;
-  }, [projectId]);
+  }, [projectId, boardId]);
 
   // Chargement initial puis sauvegarde locale différée (la persistance en ligne arrive en phase 3).
   useEffect(() => {

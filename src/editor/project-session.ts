@@ -49,6 +49,34 @@ const dirty = new Map<string, Scene>();
 const baseline = new Map<string, Scene>();
 const lastVersionAt = new Map<string, number>();
 const metaTimers = new Map<string, ReturnType<typeof setTimeout>>();
+/** Écritures différées en attente (fiches, notes, vidéo), par clé. */
+const metaJobs = new Map<string, () => Promise<void>>();
+
+function deferMeta(key: string, job: () => Promise<void>) {
+  clearTimeout(metaTimers.get(key));
+  metaJobs.set(key, job);
+  useProject.setState({ saveState: "dirty" });
+  metaTimers.set(key, setTimeout(() => void runMeta(key), META_DELAY));
+}
+
+async function runMeta(key: string) {
+  clearTimeout(metaTimers.get(key));
+  metaTimers.delete(key);
+  const job = metaJobs.get(key);
+  metaJobs.delete(key);
+  if (!job) return;
+  try {
+    await job();
+    if (metaTimers.size === 0 && dirty.size === 0) useProject.setState({ saveState: "saved" });
+  } catch {
+    useProject.setState({ saveState: "error" });
+  }
+}
+
+/** Envoie tout de suite les écritures différées (avant un partage, un export ou une fermeture). */
+export async function flushMeta() {
+  await Promise.all([...metaJobs.keys()].map(runMeta));
+}
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 let saving = false;
 let switching = false;
@@ -70,6 +98,7 @@ function schedule(delay = SAVE_DELAY) {
 }
 
 export async function flush() {
+  await flushMeta();
   clearTimeout(saveTimer);
   if (saving || dirty.size === 0) return;
   saving = true;
@@ -102,7 +131,8 @@ const onHide = () => {
   if (document.visibilityState === "hidden") void flush();
 };
 
-export async function openProject(id: string) {
+/** Ouvre un projet ; `boardId` choisit le tableau affiché au départ. */
+export async function openProject(id: string, boardId?: string) {
   const mine = ++session;
   closeListeners();
   useProject.setState({ ...initial, status: "loading" });
@@ -121,8 +151,9 @@ export async function openProject(id: string) {
     }));
     const project = { ...data.project, sheet: readSessionSheet(data.project.sheet) };
     for (const b of boards) baseline.set(b.id, b.scene);
-    useProject.setState({ status: "ready", project, boards, currentId: boards[0].id });
-    showScene(boards[0].scene);
+    const first = boards.find((b) => b.id === boardId) ?? boards[0];
+    useProject.setState({ status: "ready", project, boards, currentId: first.id });
+    showScene(first.scene);
     useEditor.setState({ hydrated: true });
 
     unsubscribe = useEditor.subscribe((state, previous) => {
@@ -149,10 +180,9 @@ function closeListeners() {
 
 export function closeProject() {
   session++;
+  // flush envoie aussi les fiches et notes en attente : rien n'est perdu en quittant la page.
   void flush();
   closeListeners();
-  for (const timer of metaTimers.values()) clearTimeout(timer);
-  metaTimers.clear();
   baseline.clear();
   lastVersionAt.clear();
   useProject.setState(initial);
@@ -226,21 +256,7 @@ export async function removeBoard(id: string) {
 /** Notes et lien vidéo : affichage immédiat, enregistrement différé. */
 export function setBoardMeta(id: string, patch: Partial<Pick<BoardRow, "notes" | "video_url" | "sheet">>) {
   patchBoard(id, patch);
-  const key = `${id}:${Object.keys(patch).join(",")}`;
-  clearTimeout(metaTimers.get(key));
-  useProject.setState({ saveState: "dirty" });
-  metaTimers.set(
-    key,
-    setTimeout(async () => {
-      metaTimers.delete(key);
-      try {
-        await updateBoard(id, patch);
-        if (metaTimers.size === 0 && dirty.size === 0) useProject.setState({ saveState: "saved" });
-      } catch {
-        useProject.setState({ saveState: "error" });
-      }
-    }, META_DELAY),
-  );
+  deferMeta(`${id}:${Object.keys(patch).join(",")}`, () => updateBoard(id, patch));
 }
 
 export async function renameProject(name: string) {
@@ -264,8 +280,13 @@ export async function restoreVersion(id: string) {
 
 /** Modifie un champ de la fiche d'exercice du tableau affiché. */
 export function setDrillField<K extends keyof DrillSheet>(key: K, value: DrillSheet[K] | "") {
-  const { boards, currentId } = useProject.getState();
-  const board = boards.find((b) => b.id === currentId);
+  const { currentId } = useProject.getState();
+  if (currentId) setBoardSheetField(currentId, key, value);
+}
+
+/** Modifie un champ de la fiche d'exercice d'un tableau ; enregistrement différé. */
+export function setBoardSheetField<K extends keyof DrillSheet>(boardId: string, key: K, value: DrillSheet[K] | "") {
+  const board = useProject.getState().boards.find((b) => b.id === boardId);
   if (!board) return;
   const sheet: DrillSheet = { ...board.sheet };
   if (value) sheet[key] = value as DrillSheet[K];
@@ -273,7 +294,6 @@ export function setDrillField<K extends keyof DrillSheet>(key: K, value: DrillSh
   setBoardMeta(board.id, { sheet });
 }
 
-let projectSheetTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Modifie un champ de l'en-tête de la fiche de séance ; enregistrement différé. */
 export function setSessionField(key: keyof SessionSheet, value: string) {
@@ -282,18 +302,37 @@ export function setSessionField(key: keyof SessionSheet, value: string) {
   const sheet: SessionSheet = { ...project.sheet };
   if (value) sheet[key] = value;
   else delete sheet[key];
-  useProject.setState({ project: { ...project, sheet }, saveState: "dirty" });
-  clearTimeout(projectSheetTimer);
-  projectSheetTimer = setTimeout(async () => {
+  useProject.setState({ project: { ...project, sheet } });
+  deferMeta("project:sheet", async () => {
     const current = useProject.getState().project;
-    if (!current) return;
-    try {
-      await updateProject(current.id, { sheet: current.sheet });
-      if (metaTimers.size === 0 && dirty.size === 0) useProject.setState({ saveState: "saved" });
-    } catch {
-      useProject.setState({ saveState: "error" });
-    }
-  }, META_DELAY);
+    if (current) await updateProject(current.id, { sheet: current.sheet });
+  });
+}
+
+/** Déplace un tableau d'un cran vers le début (-1) ou la fin (+1) du projet. */
+export async function moveBoard(id: string, delta: -1 | 1) {
+  const { boards } = useProject.getState();
+  const index = boards.findIndex((b) => b.id === id);
+  const other = boards[index + delta];
+  if (index === -1 || !other) return;
+  const a = boards[index];
+  const next = [...boards];
+  next[index] = { ...other, position: a.position };
+  next[index + delta] = { ...a, position: other.position };
+  // Positions égales (anciens tableaux) : on les rend distinctes.
+  if (a.position === other.position) next.forEach((b, i) => (next[i] = { ...b, position: i }));
+  useProject.setState({ boards: next });
+  useProject.setState({ saveState: "saving" });
+  try {
+    await Promise.all(
+      next
+        .filter((b) => boards.find((o) => o.id === b.id)?.position !== b.position)
+        .map((b) => updateBoard(b.id, { position: b.position })),
+    );
+    useProject.setState({ saveState: dirty.size || metaTimers.size ? "dirty" : "saved" });
+  } catch {
+    useProject.setState({ saveState: "error" });
+  }
 }
 
 /** Tous les tableaux du projet, celui affiché avec sa scène à jour (pour la fiche PDF). */
