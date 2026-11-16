@@ -59,6 +59,35 @@ Champs communs : `id`, `type`, `x`, `y`, `rotation`, et en option `locked`, `gro
 Créer `src/editor/pitches/<sport>.ts` (dimensions, tracés, cadrages, toujours décrits à
 l'horizontale) et l'enregistrer dans `src/editor/pitches/index.ts`. Le moteur ne change pas.
 
+## Animation
+
+`frames` (facultatif) liste les étapes. Les positions de `objects` sont celles du départ ;
+chaque étape ne décrit que les objets qui bougent.
+
+```jsonc
+"frames": [
+  {
+    "id": "f1",
+    "duration": 2,                 // secondes
+    "moves": {
+      "<id objet>": {
+        "x": 40, "y": 30, "rotation": 0,   // pose à la fin de l'étape
+        "cx": 30, "cy": 20,                // facultatif : point de contrôle d'une courbe
+        "delay": 0.2,                      // facultatif : départ différé, fraction de l'étape
+        "span": 0.5,                       // facultatif : part de l'étape occupée par le déplacement
+        "ease": "inOut",                   // inOut | linear | in | out
+        "arc": 8,                          // ballon : hauteur de la cloche, en mètres
+        "attach": "<id joueur>"            // ballon : conduit par ce joueur pendant l'étape
+      }
+    }
+  }
+]
+```
+
+La pose d'un objet à l'étape n est sa pose de départ à laquelle s'ajoutent, dans l'ordre, ses
+déplacements des étapes 1 à n (`src/editor/scene/animation.ts`). Supprimer un objet supprime
+ses déplacements.
+
 ## Banque d'objets
 
 `src/editor/scene/catalog.ts` décrit chaque objet par des primitives vectorielles (cercle,
