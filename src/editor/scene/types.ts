@@ -163,12 +163,45 @@ export type SceneObject =
 
 export type SceneObjectType = SceneObject["type"];
 
+export const EASINGS = ["inOut", "linear", "in", "out"] as const;
+export type Easing = (typeof EASINGS)[number];
+
+/** Déplacement d'un objet pendant une étape d'animation. */
+export interface Move {
+  /** Position et rotation à la fin de l'étape. */
+  x: number;
+  y: number;
+  rotation: number;
+  /** Point de contrôle d'une trajectoire courbe (Bézier quadratique) ; absent = ligne droite. */
+  cx?: number;
+  cy?: number;
+  /** Départ différé, en fraction de l'étape (0 à 0,8). */
+  delay?: number;
+  /** Part de l'étape occupée par le déplacement (0,2 à 1) ; plus court = plus rapide. */
+  span?: number;
+  ease?: Easing;
+  /** Ballon : hauteur maximale de la cloche, en mètres. */
+  arc?: number;
+  /** Ballon : identifiant du joueur qui le conduit pendant cette étape. */
+  attach?: string;
+}
+
+/** Une étape d'animation : les objets absents de `moves` ne bougent pas. */
+export interface Frame {
+  id: string;
+  /** Durée en secondes. */
+  duration: number;
+  moves: Record<string, Move>;
+}
+
 export interface Scene {
   version: typeof SCENE_VERSION;
   pitch: PitchSettings;
   teams: Team[];
   /** L'ordre du tableau est l'ordre d'empilement : le dernier est au-dessus. */
   objects: SceneObject[];
+  /** Étapes d'animation ; les positions de `objects` sont celles du départ. */
+  frames?: Frame[];
 }
 
 export const MAX_TEAMS = 4;

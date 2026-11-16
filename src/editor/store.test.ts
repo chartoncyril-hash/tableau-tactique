@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createScene } from "./scene/defaults";
 import { FORMATIONS, formationSlots } from "./scene/formations";
-import { useEditor } from "./store";
+import { displayObjects, useEditor } from "./store";
 
 const state = () => useEditor.getState();
 
@@ -155,5 +155,107 @@ describe("manipulation", () => {
     });
     const line = after[1];
     expect(line.type === "line" && line.points.map((p) => p + 0)).toEqual([0, 0, 5, 2, 10, 4]);
+  });
+});
+
+describe("étapes d'animation", () => {
+  const shown = () => displayObjects(state().scene, state().currentStep);
+
+  it("enregistre un déplacement dans l'étape sans toucher au départ", () => {
+    const id = state().addPlayerAt(10, 10, false);
+    state().addStep();
+    expect(state().currentStep).toBe(1);
+    state().moveBy([id], 5, 0);
+    expect(state().scene.objects[0]).toMatchObject({ x: 10, y: 10 });
+    expect(state().scene.frames![0].moves[id]).toMatchObject({ x: 15, y: 10 });
+    expect(shown()[0]).toMatchObject({ x: 15, y: 10 });
+    state().setStep(0);
+    expect(shown()[0]).toMatchObject({ x: 10, y: 10 });
+  });
+
+  it("cumule les étapes et laisse les suivantes partir de la bonne position", () => {
+    const id = state().addPlayerAt(0, 0, false);
+    state().addStep();
+    state().moveBy([id], 10, 0);
+    state().addStep();
+    state().moveBy([id], 0, 7);
+    expect(shown()[0]).toMatchObject({ x: 10, y: 7 });
+    state().setStep(1);
+    expect(shown()[0]).toMatchObject({ x: 10, y: 0 });
+  });
+
+  it("n'ajoute pas de commande quand rien ne change", () => {
+    state().addPlayerAt(0, 0, false);
+    state().addStep();
+    const before = state().past.length;
+    state().moveBy([], 3, 3);
+    state().align("left");
+    expect(state().past.length).toBe(before);
+  });
+
+  it("place un objet ajouté en cours d'étape dans toutes les étapes", () => {
+    state().addStep();
+    const id = state().addPlayerAt(20, 20, false);
+    expect(state().scene.frames![0].moves[id]).toBeUndefined();
+    state().setStep(0);
+    expect(shown()[0]).toMatchObject({ x: 20, y: 20 });
+  });
+
+  it("oublie les déplacements d'un objet supprimé", () => {
+    const id = state().addPlayerAt(0, 0, false);
+    state().addStep();
+    state().moveBy([id], 4, 0);
+    state().deleteSelected();
+    expect(state().scene.frames![0].moves).toEqual({});
+  });
+
+  it("annule un déplacement d'étape et l'ajout d'une étape", () => {
+    const id = state().addPlayerAt(0, 0, false);
+    state().addStep();
+    state().moveBy([id], 4, 0);
+    state().undo();
+    expect(state().scene.frames![0].moves[id]).toBeUndefined();
+    state().undo();
+    expect(state().scene.frames ?? []).toHaveLength(0);
+    expect(state().currentStep).toBe(0);
+  });
+
+  it("règle retard, courbe et cloche du déplacement sélectionné", () => {
+    const id = state().addObject({ type: "ball", x: 0, y: 0, rotation: 0 });
+    state().addStep();
+    state().updateMoves({ arc: 6, delay: 0.3 });
+    expect(state().scene.frames![0].moves[id]).toMatchObject({ x: 0, y: 0, arc: 6, delay: 0.3 });
+    state().updateMoves({ arc: undefined });
+    expect("arc" in state().scene.frames![0].moves[id]).toBe(false);
+    state().clearMoves();
+    expect(state().scene.frames![0].moves[id]).toBeUndefined();
+  });
+
+  it("détache le ballon conduit quand on le déplace à la main", () => {
+    const player = state().addPlayerAt(0, 0, false);
+    const ball = state().addObject({ type: "ball", x: 2, y: 0, rotation: 0 });
+    state().addStep();
+    state().updateMoves({ attach: player });
+    state().moveBy([ball], 10, 0);
+    expect(state().scene.frames![0].moves[ball].attach).toBeUndefined();
+  });
+
+  it("fait tourner les déplacements avec le terrain", () => {
+    const id = state().addPlayerAt(20, 30, false);
+    state().addStep();
+    state().moveBy([id], 10, 0);
+    state().toggleOrientation();
+    expect(state().scene.frames![0].moves[id]).toMatchObject({ x: 30, y: 75 });
+    state().toggleOrientation();
+    expect(state().scene.frames![0].moves[id].x).toBeCloseTo(30);
+    expect(state().scene.frames![0].moves[id].y).toBeCloseTo(30);
+  });
+
+  it("supprime une étape et recale l'étape affichée", () => {
+    state().addStep();
+    state().addStep();
+    state().removeStep(2);
+    expect(state().scene.frames).toHaveLength(1);
+    expect(state().currentStep).toBe(1);
   });
 });

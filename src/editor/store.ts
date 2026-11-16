@@ -1,6 +1,7 @@
 import { produce, type Draft } from "immer";
 import { create } from "zustand";
 import { getPitch, toHorizontal, toVertical } from "./pitches";
+import { DEFAULT_STEP_DURATION, resolveStep } from "./scene/animation";
 import { createScene, DEFAULT_INK, LINE_STYLES, TEAM_COLORS } from "./scene/defaults";
 import { formationSlots, type FormationId } from "./scene/formations";
 import { alignDeltas, distributeDeltas, type AlignMode } from "./scene/geometry";
@@ -9,6 +10,7 @@ import {
   type BallStyle,
   type EquipmentKind,
   type LineKind,
+  type Move,
   type PitchSettings,
   type PlayerLook,
   type Scene,
@@ -64,16 +66,33 @@ export interface EditorState {
   future: HistoryEntry[];
   clipboard: SceneObject[];
   liveBase: Scene | null;
+  /** Étape d'animation affichée et modifiée : 0 = départ. */
+  currentStep: number;
   /** Vrai une fois la scène initiale chargée dans le navigateur. */
   hydrated: boolean;
 
-  commit: (label: string, recipe: (scene: Draft<Scene>) => void, coalesceKey?: string) => void;
+  commit: (
+    label: string,
+    recipe: (scene: Draft<Scene>) => void,
+    coalesceKey?: string,
+    /** Vrai pour agir sur la scène brute, sans passer par l'étape affichée. */
+    raw?: boolean,
+  ) => void;
   beginLive: () => void;
   live: (recipe: (scene: Draft<Scene>) => void) => void;
   endLive: (label: string) => void;
   undo: () => void;
   redo: () => void;
   loadScene: (scene: Scene) => void;
+
+  setStep: (step: number) => void;
+  addStep: () => void;
+  removeStep: (step: number) => void;
+  setStepDuration: (step: number, seconds: number) => void;
+  /** Règle le déplacement des objets sélectionnés pour l'étape affichée. */
+  updateMoves: (patch: Partial<Move>, coalesceKey?: string) => void;
+  /** Supprime le déplacement des objets sélectionnés pour l'étape affichée. */
+  clearMoves: () => void;
   /** Remplace toute la scène en gardant l'historique (restauration d'une version). */
   replaceScene: (scene: Scene, label: string) => void;
 
@@ -159,6 +178,74 @@ function rotateObject(obj: Draft<SceneObject>, to: "vertical" | "horizontal", le
   }
 }
 
+function pruneMoves(scene: Draft<Scene>) {
+  if (!scene.frames) return;
+  const ids = new Set(scene.objects.map((o) => o.id));
+  for (const frame of scene.frames) {
+    for (const [id, move] of Object.entries(frame.moves)) {
+      if (!ids.has(id)) delete frame.moves[id];
+      else if (move.attach && !ids.has(move.attach)) delete move.attach;
+    }
+  }
+}
+
+let displayCache: { scene: Scene; step: number; objects: SceneObject[] } | undefined;
+
+/** Objets tels qu'affichés à une étape : positions de départ plus les déplacements cumulés. */
+export function displayObjects(scene: Scene, step: number): SceneObject[] {
+  if (step <= 0 || !scene.frames?.length) return scene.objects;
+  if (displayCache?.scene === scene && displayCache.step === step) return displayCache.objects;
+  const poses = resolveStep(scene, step);
+  const objects = scene.objects.map((o) => {
+    const pose = poses.get(o.id);
+    return !pose || (pose.x === o.x && pose.y === o.y && pose.rotation === o.rotation)
+      ? o
+      : { ...o, x: pose.x, y: pose.y, rotation: pose.rotation };
+  });
+  displayCache = { scene, step, objects };
+  return objects;
+}
+
+/**
+ * Applique une modification à l'étape affichée. La recette voit les objets à leur position
+ * dans cette étape ; tout changement de position devient un déplacement de l'étape, et les
+ * positions de départ restent intactes.
+ */
+function produceAtStep(scene: Scene, step: number, recipe: (scene: Draft<Scene>) => void): Scene {
+  if (step <= 0 || !scene.frames?.[step - 1]) {
+    return produce(scene, (draft) => {
+      recipe(draft);
+      pruneMoves(draft);
+    });
+  }
+  const shown = displayObjects(scene, step);
+  const projected = shown === scene.objects ? scene : { ...scene, objects: shown };
+  const after = produce(projected, recipe);
+  if (after === projected) return scene;
+  const base = new Map(scene.objects.map((o) => [o.id, o]));
+  const seen = new Map(shown.map((o) => [o.id, o]));
+  return produce(after, (draft) => {
+    const frame = draft.frames?.[step - 1];
+    for (const obj of draft.objects) {
+      const b = base.get(obj.id);
+      const r = seen.get(obj.id);
+      if (!b || !r) continue;
+      if (frame && (obj.x !== r.x || obj.y !== r.y || obj.rotation !== r.rotation)) {
+        const previous = frame.moves[obj.id];
+        frame.moves[obj.id] = { ...previous, x: obj.x, y: obj.y, rotation: obj.rotation };
+        // Un ballon déplacé à la main n'est plus conduit par un joueur.
+        delete frame.moves[obj.id].attach;
+      }
+      if (obj.x !== b.x) obj.x = b.x;
+      if (obj.y !== b.y) obj.y = b.y;
+      if (obj.rotation !== b.rotation) obj.rotation = b.rotation;
+    }
+    pruneMoves(draft);
+  });
+}
+
+const clampStep = (scene: Scene, step: number) => Math.min(Math.max(0, step), scene.frames?.length ?? 0);
+
 export const useEditor = create<EditorState>()((set, get) => ({
   scene: createScene(),
   selection: [],
@@ -172,11 +259,12 @@ export const useEditor = create<EditorState>()((set, get) => ({
   future: [],
   clipboard: [],
   liveBase: null,
+  currentStep: 0,
   hydrated: false,
 
-  commit(label, recipe, coalesceKey) {
-    const { scene, past } = get();
-    const after = produce(scene, recipe);
+  commit(label, recipe, coalesceKey, raw) {
+    const { scene, past, currentStep } = get();
+    const after = raw ? produce(scene, recipe) : produceAtStep(scene, currentStep, recipe);
     if (after === scene) return;
     const now = Date.now();
     const last = past[past.length - 1];
@@ -199,7 +287,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
     if (!get().liveBase) set({ liveBase: get().scene });
   },
   live(recipe) {
-    set({ scene: produce(get().scene, recipe) });
+    set({ scene: produceAtStep(get().scene, get().currentStep, recipe) });
   },
   endLive(label) {
     const { liveBase, scene, past } = get();
@@ -225,6 +313,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
       past: past.slice(0, -1),
       future: [...future, entry],
       selection: selection.filter((id) => ids.has(id)),
+      currentStep: clampStep(entry.before, get().currentStep),
       liveBase: null,
     });
   },
@@ -238,6 +327,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
       past: [...past, entry],
       future: future.slice(0, -1),
       selection: selection.filter((id) => ids.has(id)),
+      currentStep: clampStep(entry.after, get().currentStep),
       liveBase: null,
     });
   },
@@ -247,9 +337,80 @@ export const useEditor = create<EditorState>()((set, get) => ({
       past: [],
       future: [],
       selection: [],
+      currentStep: 0,
       liveBase: null,
       activeTeamId: scene.teams[0]?.id ?? "team-a",
     });
+  },
+
+  setStep(step) {
+    set({ currentStep: clampStep(get().scene, step) });
+  },
+  addStep() {
+    const at = get().currentStep;
+    get().commit(
+      "addStep",
+      (scene) => {
+        scene.frames ??= [];
+        scene.frames.splice(at, 0, { id: newId(), duration: DEFAULT_STEP_DURATION, moves: {} });
+      },
+      undefined,
+      true,
+    );
+    set({ currentStep: at + 1 });
+  },
+  removeStep(step) {
+    if (step < 1) return;
+    get().commit("removeStep", (scene) => void scene.frames?.splice(step - 1, 1), undefined, true);
+    set({ currentStep: clampStep(get().scene, Math.min(get().currentStep, step - 1)) });
+  },
+  setStepDuration(step, seconds) {
+    const duration = Math.min(20, Math.max(0.3, Math.round(seconds * 10) / 10));
+    get().commit(
+      "stepDuration",
+      (scene) => {
+        const frame = scene.frames?.[step - 1];
+        if (frame) frame.duration = duration;
+      },
+      `stepDuration:${step}`,
+      true,
+    );
+  },
+  updateMoves(patch, coalesceKey) {
+    const { scene, selection, currentStep } = get();
+    if (currentStep < 1 || !scene.frames?.[currentStep - 1]) return;
+    const poses = resolveStep(scene, currentStep);
+    get().commit(
+      "editMove",
+      (draft) => {
+        const frame = draft.frames![currentStep - 1];
+        for (const id of selection) {
+          const pose = poses.get(id);
+          if (!pose) continue;
+          const current = frame.moves[id] ?? { x: pose.x, y: pose.y, rotation: pose.rotation };
+          const next: Move = { ...current, ...patch };
+          for (const key of Object.keys(next) as (keyof Move)[]) {
+            if (next[key] === undefined) delete next[key];
+          }
+          frame.moves[id] = next;
+        }
+      },
+      coalesceKey,
+      true,
+    );
+  },
+  clearMoves() {
+    const { selection, currentStep } = get();
+    if (currentStep < 1) return;
+    get().commit(
+      "clearMove",
+      (draft) => {
+        const frame = draft.frames?.[currentStep - 1];
+        if (frame) for (const id of selection) delete frame.moves[id];
+      },
+      undefined,
+      true,
+    );
   },
 
   replaceScene(scene, label) {
@@ -358,7 +519,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
   duplicateSelected() {
     const { scene, selection } = get();
     const copies = cloneWithNewIds(
-      scene.objects.filter((o) => selection.includes(o.id)),
+      displayObjects(scene, get().currentStep).filter((o) => selection.includes(o.id)),
       2,
     );
     if (copies.length === 0) return;
@@ -370,7 +531,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
 
   copy() {
     const { scene, selection } = get();
-    const picked = scene.objects.filter((o) => selection.includes(o.id));
+    const picked = displayObjects(scene, get().currentStep).filter((o) => selection.includes(o.id));
     if (picked.length) set({ clipboard: picked });
   },
   paste() {
@@ -438,7 +599,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
   align(mode) {
     const { scene, selection } = get();
     const deltas = alignDeltas(
-      scene.objects.filter((o) => selection.includes(o.id) && !o.locked),
+      displayObjects(scene, get().currentStep).filter((o) => selection.includes(o.id) && !o.locked),
       mode,
     );
     get().commit("align", (draft) => {
@@ -454,7 +615,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
   distribute(axis) {
     const { scene, selection } = get();
     const deltas = distributeDeltas(
-      scene.objects.filter((o) => selection.includes(o.id) && !o.locked),
+      displayObjects(scene, get().currentStep).filter((o) => selection.includes(o.id) && !o.locked),
       axis,
     );
     get().commit("distribute", (draft) => {
@@ -478,12 +639,38 @@ export const useEditor = create<EditorState>()((set, get) => ({
     );
   },
   toggleOrientation() {
-    get().commit("orientation", (scene) => {
-      const to = scene.pitch.orientation === "horizontal" ? "vertical" : "horizontal";
-      const { length } = getPitch(scene.pitch.sport);
-      for (const obj of scene.objects) rotateObject(obj, to, length);
-      scene.pitch.orientation = to;
-    });
+    get().commit(
+      "orientation",
+      (scene) => {
+        const to = scene.pitch.orientation === "horizontal" ? "vertical" : "horizontal";
+        const { length } = getPitch(scene.pitch.sport);
+        const turn = (x: number, y: number) =>
+          to === "vertical" ? toVertical(x, y, length) : toHorizontal(x, y, length);
+        const spins = new Set(
+          scene.objects
+            .filter((o) => o.type === "equipment" || (o.type === "zone" && o.shape !== "polygon"))
+            .map((o) => o.id),
+        );
+        for (const obj of scene.objects) rotateObject(obj, to, length);
+        // Les déplacements enregistrés tournent avec le terrain.
+        for (const frame of scene.frames ?? []) {
+          for (const [id, move] of Object.entries(frame.moves)) {
+            const end = turn(move.x, move.y);
+            move.x = end.x;
+            move.y = end.y;
+            if (move.cx !== undefined && move.cy !== undefined) {
+              const control = turn(move.cx, move.cy);
+              move.cx = control.x;
+              move.cy = control.y;
+            }
+            if (spins.has(id)) move.rotation += to === "vertical" ? -90 : 90;
+          }
+        }
+        scene.pitch.orientation = to;
+      },
+      undefined,
+      true,
+    );
   },
 
   updateTeam(id, patch, coalesceKey) {
