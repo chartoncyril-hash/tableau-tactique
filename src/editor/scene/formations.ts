@@ -64,3 +64,13 @@ export function formationSlots(
 
   return slots;
 }
+
+/**
+ * Orientation par défaut d'un joueur (degrés, 0 = vers la droite) : chaque camp regarde le but
+ * adverse. Horizontal : camp 0 vers la droite, camp 1 vers la gauche ; vertical : camp 0 vers le
+ * haut, camp 1 vers le bas.
+ */
+export function facingFor(side: 0 | 1, orientation: Orientation): number {
+  if (orientation === "vertical") return side === 0 ? 270 : 90;
+  return side === 0 ? 0 : 180;
+}

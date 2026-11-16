@@ -90,6 +90,54 @@ export function kitTexture(team: Team | undefined): THREE.CanvasTexture {
   return texture;
 }
 
+/**
+ * Maillot d'un personnage, enroulé sur le torse (cylindre three.js : u = 0,25 devant, 0,75 dans le
+ * dos). Grand numéro dans le dos, petit sur la poitrine : on distingue l'avant de l'arrière.
+ */
+export function jerseyTexture(team: Team | undefined, number: string): THREE.CanvasTexture {
+  const c1 = team?.color ?? "#6b7280";
+  const c2 = team?.color2 ?? "#111827";
+  const pattern = team?.pattern ?? "plain";
+  const W = 512;
+  const H = 208;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const g = canvas.getContext("2d")!;
+  g.fillStyle = c1;
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = c2;
+  if (pattern === "stripes") for (let i = 0; i < 10; i++) g.fillRect(i * (W / 10) + W / 40, 0, W / 20, H);
+  if (pattern === "hoops") for (let i = 0; i < 4; i++) g.fillRect(0, i * (H / 4) + H / 8, W, H / 8);
+  // Moitiés : gauche et droite du joueur (côtés +z / -z du cylindre).
+  if (pattern === "halves") g.fillRect(W * 0.5, 0, W * 0.5, H);
+  if (number) {
+    const font = "Arial, Helvetica, sans-serif";
+    const plate = pattern === "plain" ? null : c1;
+    const ink = plate ? contrastOn(plate) : contrastOn(c1);
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.lineJoin = "round";
+    const draw = (x: number, size: number) => {
+      g.font = `bold ${size}px ${font}`;
+      if (plate) {
+        // Sur un maillot à motif, le numéro garde un contour pour rester lisible.
+        g.lineWidth = size * 0.14;
+        g.strokeStyle = ink === "#ffffff" ? "#111827" : "#ffffff";
+        g.strokeText(number, x, H * 0.5);
+      }
+      g.fillStyle = ink;
+      g.fillText(number, x, H * 0.52);
+    };
+    draw(W * 0.75, number.length > 2 ? 96 : 128);
+    draw(W * 0.25 + W * 0.04, 44);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
+}
+
 /** Étiquette au-dessus d'un joueur : pastille avec le numéro, nom en dessous, « C » du capitaine. */
 export function labelTexture(options: { number: string; name: string; color: string; captain?: boolean }) {
   const canvas = document.createElement("canvas");

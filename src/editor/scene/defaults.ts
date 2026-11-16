@@ -1,3 +1,4 @@
+import { facingFor } from "./formations";
 import {
   SCENE_VERSION,
   type LineKind,
@@ -36,6 +37,7 @@ export function createScene(names: [string, string] = ["A", "B"]): Scene {
     },
     teams: defaultTeams(names),
     objects: [],
+    facing: 1,
   };
 }
 
@@ -65,5 +67,27 @@ export function migrateScene(input: unknown): Scene | null {
   if (!scene.pitch || !Array.isArray(scene.teams) || !Array.isArray(scene.objects)) {
     return null;
   }
-  return scene as Scene;
+  return scene.facing === 1 ? (scene as Scene) : withFacing(scene as Scene);
+}
+
+/**
+ * Tableaux d'avant l'orientation des joueurs : chaque joueur prend l'orientation par défaut de son
+ * camp, à laquelle s'ajoute la rotation qu'il avait déjà (et de même pour ses déplacements).
+ */
+function withFacing(scene: Scene): Scene {
+  const side = new Map(scene.teams.map((t, i) => [t.id, (i % 2) as 0 | 1]));
+  const offsets = new Map<string, number>();
+  const objects = scene.objects.map((o) => {
+    if (o.type !== "player") return o;
+    const offset = facingFor(side.get(o.teamId) ?? 0, scene.pitch.orientation);
+    offsets.set(o.id, offset);
+    return { ...o, rotation: o.rotation + offset };
+  });
+  const frames = scene.frames?.map((f) => ({
+    ...f,
+    moves: Object.fromEntries(
+      Object.entries(f.moves).map(([id, m]) => [id, offsets.has(id) ? { ...m, rotation: m.rotation + offsets.get(id)! } : m]),
+    ),
+  }));
+  return { ...scene, objects, ...(frames ? { frames } : {}), facing: 1 };
 }

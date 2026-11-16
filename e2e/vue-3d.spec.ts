@@ -34,6 +34,12 @@ test("passer en 3D, changer de point de vue et revenir en 2D", async ({ page }) 
   await cameras.getByRole("radio", { name: "Derrière le but" }).click();
   await expect(view(page)).toHaveAttribute("data-camera", "goal");
 
+  const figures = page.getByRole("radiogroup", { name: "Représentation des joueurs" });
+  await expect(figures.getByRole("radio", { name: "Personnages" })).toHaveAttribute("aria-checked", "true");
+  await figures.getByRole("radio", { name: "Pions" }).click();
+  await expect(figures.getByRole("radio", { name: "Pions" })).toHaveAttribute("aria-checked", "true");
+  await figures.getByRole("radio", { name: "Personnages" }).click();
+
   // La scène 3D est bien dessinée : l'image n'est pas uniforme.
   const shot = await view(page).locator("canvas").screenshot();
   expect(shot.length).toBeGreaterThan(20_000);
@@ -75,4 +81,34 @@ test("message clair si l'appareil ne gère pas la 3D", async ({ page }) => {
   await expect(view(page).getByRole("alert")).toContainText("ne permet pas l'affichage 3D");
   await page.getByRole("button", { name: "Vue 3D" }).click();
   await expect(view(page)).toBeHidden();
+});
+
+test("orienter les joueurs depuis le panneau", async ({ page }) => {
+  await openEditor(page);
+  await withPanel(page, () => page.getByRole("button", { name: "Placer Équipe A" }).click());
+  await page.locator("body").click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("Control+a");
+  await withPanel(page, async () => {
+    const panel = page.getByRole("complementary", { name: "Propriétés" });
+    await expect(panel.getByLabel("Orientation : 0 degrés")).toBeVisible();
+    await panel.getByRole("button", { name: "Tourner de 45° à droite" }).click();
+    await expect(panel.getByLabel("Orientation : 45 degrés")).toBeVisible();
+    await panel.getByRole("button", { name: "Demi-tour" }).click();
+    await expect(panel.getByLabel("Orientation : 225 degrés")).toBeVisible();
+    await panel.getByRole("button", { name: "Face au but adverse" }).click();
+    await expect(panel.getByLabel("Orientation : 0 degrés")).toBeVisible();
+  });
+  await page.keyboard.press("Escape");
+  await withPanel(page, async () => {
+    const show = page.getByRole("checkbox", { name: /Montrer l'orientation des joueurs/ });
+    await expect(show).toBeChecked();
+    await show.uncheck();
+    await expect(show).not.toBeChecked();
+  });
+  await page.waitForTimeout(700);
+  await page.reload();
+  await expect(page.getByTestId("editor-canvas").locator("canvas").first()).toBeVisible();
+  await withPanel(page, () =>
+    expect(page.getByRole("checkbox", { name: /Montrer l'orientation des joueurs/ })).not.toBeChecked(),
+  );
 });

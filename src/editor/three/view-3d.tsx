@@ -10,7 +10,7 @@ import type { Pose } from "../scene/animation";
 import type { Scene, SceneObject } from "../scene/types";
 import { displayObjects, useEditor } from "../store";
 import { cameraPose, isGroundDrawing, sceneOrigin, toWorld, yaw } from "./layout";
-import { Ball3D, Equipment3D, Player3D } from "./models";
+import { Ball3D, Equipment3D, Figure3D, Player3D, strides } from "./models";
 import { groundRect, groundTexture } from "./textures";
 import { useView3d } from "./view-mode";
 
@@ -59,10 +59,12 @@ function Ground({ scene, origin }: { scene: Scene; origin: { x: number; y: numbe
   );
 }
 
-function ObjectModel({ obj, scene }: { obj: SceneObject; scene: Scene }) {
+function ObjectModel({ obj, scene, people }: { obj: SceneObject; scene: Scene; people: boolean }) {
   switch (obj.type) {
-    case "player":
-      return <Player3D obj={obj} team={scene.teams.find((t) => t.id === obj.teamId)} />;
+    case "player": {
+      const team = scene.teams.find((t) => t.id === obj.teamId);
+      return people ? <Figure3D obj={obj} team={team} /> : <Player3D obj={obj} team={team} />;
+    }
     case "ball":
       return <Ball3D style={obj.style} />;
     case "equipment":
@@ -76,6 +78,7 @@ function ObjectModel({ obj, scene }: { obj: SceneObject; scene: Scene }) {
 function Objects({ scene, step, origin }: { scene: Scene; step: number; origin: { x: number; y: number } }) {
   const invalidate = useThree((s) => s.invalidate);
   const refs = useRef(new Map<string, THREE.Group>());
+  const people = useView3d((s) => s.figures === "people");
   const objects = displayObjects(scene, step).filter((o) => !isGroundDrawing(o));
 
   useEffect(() => {
@@ -83,17 +86,37 @@ function Objects({ scene, step, origin }: { scene: Scene; step: number; origin: 
   }, [objects.length]);
 
   useEffect(() => {
-    const place = (poses: Map<string, Pose>) => {
+    // Foulée des personnages : la phase avance avec la distance parcourue, l'amplitude suit la vitesse.
+    const gait = new Map<string, { x: number; y: number; t: number; phase: number; amount: number }>();
+    const place = (poses: Map<string, Pose>, playing: boolean) => {
+      const now = performance.now();
       for (const [id, group] of refs.current) {
         const pose = poses.get(id);
         if (!pose) continue;
         const [x, , z] = toWorld(pose.x, pose.y, origin);
         group.position.set(x, pose.lift, z);
         group.rotation.y = yaw(pose.rotation);
+        const stride = strides.get(id);
+        if (!stride) continue;
+        const g = gait.get(id);
+        if (!playing || !g) {
+          gait.set(id, { x: pose.x, y: pose.y, t: now, phase: 0, amount: 0 });
+          stride(0, 0);
+          continue;
+        }
+        const d = Math.hypot(pose.x - g.x, pose.y - g.y);
+        const dt = Math.max(1, now - g.t) / 1000;
+        const target = Math.min(1, d / dt / 5);
+        g.amount += (target - g.amount) * 0.25;
+        g.phase += d * 1.9;
+        g.x = pose.x;
+        g.y = pose.y;
+        g.t = now;
+        stride(g.phase, g.amount);
       }
       invalidate();
     };
-    return playbackTarget.listen((poses) => place(poses ?? restingPoses()));
+    return playbackTarget.listen((poses) => place(poses ?? restingPoses(), poses !== null));
   }, [origin, invalidate]);
 
   return (
@@ -112,7 +135,7 @@ function Objects({ scene, step, origin }: { scene: Scene; step: number; origin: 
             rotation-y={yaw(obj.rotation)}
             scale={scale}
           >
-            <ObjectModel obj={obj} scene={scene} />
+            <ObjectModel obj={obj} scene={scene} people={people} />
           </group>
         );
       })}

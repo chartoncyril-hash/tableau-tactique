@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { EQUIPMENT_SIZE, equipmentPrims } from "../scene/catalog";
 import type { BallStyle, EquipmentObject, PlayerObject, Team } from "../scene/types";
-import { kitTexture, labelTexture, primsTexture } from "./textures";
+import { contrastOn } from "../export/svg";
+import { jerseyTexture, kitTexture, labelTexture, primsTexture } from "./textures";
 
 /**
  * Modèles 3D, en mètres, posés sur le sol (y = 0) et orientés dans le repère local de l'objet
@@ -65,6 +66,148 @@ export function Player3D({ obj, team }: { obj: PlayerObject; team: Team | undefi
         <meshStandardMaterial color="#e5e7eb" roughness={0.5} />
       </mesh>
       <sprite position-y={2.85} scale={[2.3, 1.72, 1]} renderOrder={2}>
+        <spriteMaterial map={label} depthWrite={false} transparent />
+      </sprite>
+    </group>
+  );
+}
+
+// --- Personnages ------------------------------------------------------------
+
+/** Agrandissement des personnages (1,85 m réels → environ 3 m), comme les jetons du tableau 2D. */
+export const FIGURE_SCALE = 1.65;
+const SKINS = ["#f2c9a8", "#dcaa80", "#b9825a", "#8a5a3c", "#5e3d29"];
+const HAIRS = ["#1f1a17", "#3a2a1e", "#6b4a2b", "#c7a06a", "#0f0f10"];
+
+function hash(text: string) {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+/** Membres animés par la lecture : foulée (radians) et amplitude (0 à 1) par joueur. */
+export const strides = new Map<string, (phase: number, amount: number) => void>();
+
+/**
+ * Footballeur stylisé, tourné vers +x (l'avant du joueur, comme la pointe du jeton 2D) : cheveux à
+ * l'arrière du crâne, yeux et petit numéro devant, grand numéro dans le dos. Teint et cheveux
+ * varient d'un joueur à l'autre (déterminés par son identifiant).
+ */
+export function Figure3D({ obj, team }: { obj: PlayerObject; team: Team | undefined }) {
+  const color = team?.color ?? "#6b7280";
+  const shorts = team?.pattern && team.pattern !== "plain" ? (team.color2 ?? "#111827") : contrastOn(color) === "#ffffff" ? "#f8fafc" : "#111827";
+  const socks = color;
+  const h = hash(obj.id);
+  const skin = SKINS[h % SKINS.length];
+  const hair = HAIRS[(h >> 3) % HAIRS.length];
+  const jersey = useMemo(() => jerseyTexture(team, obj.number), [team, obj.number]);
+  const label = useMemo(
+    () => labelTexture({ number: obj.number, name: obj.name, color, captain: obj.captain }),
+    [obj.number, obj.name, color, obj.captain],
+  );
+  useEffect(() => () => jersey.dispose(), [jersey]);
+  useEffect(() => () => label.dispose(), [label]);
+
+  const legL = useRef<THREE.Group>(null);
+  const legR = useRef<THREE.Group>(null);
+  const armL = useRef<THREE.Group>(null);
+  const armR = useRef<THREE.Group>(null);
+  useEffect(() => {
+    strides.set(obj.id, (phase, amount) => {
+      const swing = Math.sin(phase) * amount;
+      if (legL.current) legL.current.rotation.z = swing * 0.65;
+      if (legR.current) legR.current.rotation.z = -swing * 0.65;
+      if (armL.current) armL.current.rotation.z = -swing * 0.55;
+      if (armR.current) armR.current.rotation.z = swing * 0.55;
+    });
+    return () => {
+      strides.delete(obj.id);
+    };
+  }, [obj.id]);
+
+  const gloves = obj.goalkeeper ? "#d9f99d" : skin;
+  const leg = (z: number, ref: React.RefObject<THREE.Group | null>) => (
+    <group ref={ref} position={[0, 0.9, z]}>
+      <mesh position-y={-0.2} castShadow>
+        <capsuleGeometry args={[0.075, 0.26, 4, 10]} />
+        <meshStandardMaterial color={skin} roughness={0.7} />
+      </mesh>
+      <mesh position-y={-0.6} castShadow>
+        <cylinderGeometry args={[0.07, 0.06, 0.36, 12]} />
+        <meshStandardMaterial color={socks} roughness={0.8} />
+      </mesh>
+      <mesh position={[0.05, -0.85, 0]} castShadow>
+        <boxGeometry args={[0.24, 0.08, 0.1]} />
+        <meshStandardMaterial color="#111827" roughness={0.5} />
+      </mesh>
+    </group>
+  );
+  const arm = (z: number, ref: React.RefObject<THREE.Group | null>) => (
+    <group ref={ref} position={[0, 1.48, z]} rotation-x={z > 0 ? 0.12 : -0.12}>
+      <mesh position-y={-0.12} castShadow>
+        <capsuleGeometry args={[0.062, 0.14, 4, 10]} />
+        <meshStandardMaterial color={color} roughness={0.75} />
+      </mesh>
+      <mesh position-y={-0.38} castShadow>
+        <capsuleGeometry args={[0.05, 0.22, 4, 10]} />
+        <meshStandardMaterial color={skin} roughness={0.7} />
+      </mesh>
+      <mesh position-y={-0.56} castShadow>
+        <sphereGeometry args={[obj.goalkeeper ? 0.075 : 0.055, 12, 10]} />
+        <meshStandardMaterial color={gloves} roughness={0.7} />
+      </mesh>
+    </group>
+  );
+
+  return (
+    <group scale={FIGURE_SCALE}>
+      {obj.goalkeeper && (
+        <mesh rotation-x={-Math.PI / 2} position-y={0.02}>
+          <ringGeometry args={[0.48, 0.58, 40]} />
+          <meshBasicMaterial color="#facc15" />
+        </mesh>
+      )}
+      {/* Ombre portée simple au pied, toujours visible même sans ombres dynamiques. */}
+      <mesh rotation-x={-Math.PI / 2} position-y={0.012}>
+        <circleGeometry args={[0.32, 24]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.18} depthWrite={false} />
+      </mesh>
+      {leg(0.1, legL)}
+      {leg(-0.1, legR)}
+      <mesh position-y={0.93} castShadow>
+        <cylinderGeometry args={[0.19, 0.2, 0.24, 20]} />
+        <meshStandardMaterial color={shorts} roughness={0.8} />
+      </mesh>
+      <mesh position-y={1.28} scale={[0.72, 1, 1]} castShadow>
+        <cylinderGeometry args={[0.24, 0.19, 0.5, 28]} />
+        <meshStandardMaterial map={jersey} roughness={0.75} />
+      </mesh>
+      <mesh position-y={1.52} scale={[0.72, 0.42, 1]} castShadow>
+        <sphereGeometry args={[0.24, 20, 12]} />
+        <meshStandardMaterial map={jersey} roughness={0.75} />
+      </mesh>
+      {arm(0.29, armL)}
+      {arm(-0.29, armR)}
+      <mesh position-y={1.6}>
+        <cylinderGeometry args={[0.055, 0.06, 0.1, 12]} />
+        <meshStandardMaterial color={skin} roughness={0.7} />
+      </mesh>
+      <mesh position-y={1.73} castShadow>
+        <sphereGeometry args={[0.115, 20, 16]} />
+        <meshStandardMaterial color={skin} roughness={0.65} />
+      </mesh>
+      {/* Cheveux : calotte décalée vers l'arrière ; le visage reste dégagé devant. */}
+      <mesh position={[-0.018, 1.745, 0]} rotation-z={0.5}>
+        <sphereGeometry args={[0.122, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+        <meshStandardMaterial color={hair} roughness={0.9} />
+      </mesh>
+      {[0.04, -0.04].map((z) => (
+        <mesh key={z} position={[0.105, 1.75, z]}>
+          <sphereGeometry args={[0.014, 8, 6]} />
+          <meshBasicMaterial color="#1f2937" />
+        </mesh>
+      ))}
+      <sprite position-y={2.25} scale={[1.3, 0.98, 1]} renderOrder={2}>
         <spriteMaterial map={label} depthWrite={false} transparent />
       </sprite>
     </group>

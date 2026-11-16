@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { getPitch, toHorizontal, toVertical } from "./pitches";
 import { DEFAULT_STEP_DURATION, resolveStep } from "./scene/animation";
 import { createScene, DEFAULT_INK, LINE_STYLES, TEAM_COLORS } from "./scene/defaults";
-import { formationSlots, type FormationId } from "./scene/formations";
+import { facingFor, formationSlots, type FormationId } from "./scene/formations";
 import { assignLineup, shortName, type PlayerRow, type TeamRow } from "@/lib/roster";
 import { alignDeltas, distributeDeltas, type AlignMode } from "./scene/geometry";
 import {
@@ -176,7 +176,7 @@ function rotateObject(obj: Draft<SceneObject>, to: "vertical" | "horizontal", le
   };
   if (obj.type === "line" || obj.type === "freehand") turn(obj.points);
   else if (obj.type === "zone" && obj.shape === "polygon") turn(obj.points);
-  else if (obj.type === "zone" || obj.type === "equipment") {
+  else if (obj.type === "zone" || obj.type === "equipment" || obj.type === "player") {
     obj.rotation += to === "vertical" ? -90 : 90;
   }
 }
@@ -469,12 +469,13 @@ export const useEditor = create<EditorState>()((set, get) => ({
       .filter((o) => o.type === "player" && o.teamId === teamId)
       .map((o) => Number((o as { number: string }).number) || 0);
     const number = goalkeeper && !used.includes(1) ? 1 : Math.max(1, ...used) + 1;
+    const side = (Math.max(0, scene.teams.findIndex((t) => t.id === teamId)) % 2) as 0 | 1;
     return get().addObject(
       {
         type: "player",
         x,
         y,
-        rotation: 0,
+        rotation: facingFor(side, scene.pitch.orientation),
         teamId,
         number: String(used.length === 0 && !goalkeeper ? 2 : number),
         name: "",
@@ -651,7 +652,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
           to === "vertical" ? toVertical(x, y, length) : toHorizontal(x, y, length);
         const spins = new Set(
           scene.objects
-            .filter((o) => o.type === "equipment" || (o.type === "zone" && o.shape !== "polygon"))
+            .filter((o) => o.type === "equipment" || o.type === "player" || (o.type === "zone" && o.shape !== "polygon"))
             .map((o) => o.id),
         );
         for (const obj of scene.objects) rotateObject(obj, to, length);
@@ -722,6 +723,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
       team.color2 = roster.kit.color2;
       team.rosterTeamId = roster.id;
       const slots = formationSlots(formation, (index % 2) as 0 | 1, scene.pitch.sport, scene.pitch.orientation);
+      const facing = facingFor((index % 2) as 0 | 1, scene.pitch.orientation);
       const lineup = assignLineup(slots, players);
       scene.objects = scene.objects.filter((o) => o.type !== "player" || o.teamId !== sceneTeamId);
       slots.forEach((slot, i) => {
@@ -731,7 +733,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
           type: "player",
           x: slot.x,
           y: slot.y,
-          rotation: 0,
+          rotation: facing,
           teamId: sceneTeamId,
           number: player?.number || slot.number,
           name: player ? shortName(player) : "",
@@ -756,6 +758,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
         scene.pitch.sport,
         scene.pitch.orientation,
       );
+      const facing = facingFor((index % 2) as 0 | 1, scene.pitch.orientation);
       const players = scene.objects
         .filter((o) => o.type === "player" && o.teamId === teamId)
         .sort((a, b) => {
@@ -771,6 +774,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
         if (existing && existing.type === "player") {
           existing.x = slot.x;
           existing.y = slot.y;
+          existing.rotation = facing;
           existing.goalkeeper = slot.goalkeeper;
           existing.role = slot.role;
           if (!existing.name) existing.number = slot.number;
@@ -780,7 +784,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
             type: "player",
             x: slot.x,
             y: slot.y,
-            rotation: 0,
+            rotation: facing,
             teamId,
             number: slot.number,
             name: "",

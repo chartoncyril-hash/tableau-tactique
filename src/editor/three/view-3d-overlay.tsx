@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CAMERA_PRESETS } from "./layout";
-import { setCameraPreset, useView3d } from "./view-mode";
+import { setCameraPreset, setFigures, useView3d } from "./view-mode";
 
 // three.js n'est téléchargé qu'à la première ouverture de la vue 3D.
 const View3D = dynamic(() => import("./view-3d"), { ssr: false });
@@ -27,6 +27,7 @@ export function View3dOverlay() {
   const camera = useView3d((s) => s.camera);
   const ready = useView3d((s) => s.ready);
   const objects = useView3d((s) => s.objects);
+  const figures = useView3d((s) => s.figures);
   const [supported, setSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -80,6 +81,27 @@ export function View3dOverlay() {
                 )}
               >
                 {t(`camera.${preset}`)}
+              </button>
+            ))}
+          </div>
+          <div
+            role="radiogroup"
+            aria-label={t("figures")}
+            className="absolute top-2 right-2 flex gap-1 rounded-lg bg-card/90 p-1 shadow backdrop-blur max-sm:top-14 max-sm:right-auto max-sm:left-2"
+          >
+            {(["people", "pawns"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={figures === value}
+                onClick={() => setFigures(value)}
+                className={cn(
+                  "h-9 shrink-0 rounded-md px-3 text-sm whitespace-nowrap transition-colors",
+                  figures === value ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {t(`figure.${value}`)}
               </button>
             ))}
           </div>

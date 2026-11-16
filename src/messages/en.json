@@ -238,7 +238,14 @@
         "hoops": "Hoops",
         "halves": "Halves"
       },
-      "onlineSave": "Saved online automatically."
+      "onlineSave": "Saved online automatically.",
+      "facing": "Facing",
+      "turnLeft": "Turn 45° left",
+      "turnRight": "Turn 45° right",
+      "halfTurn": "Half turn",
+      "faceGoal": "Face the opposing goal",
+      "facingValue": "Facing: {degrees} degrees",
+      "showFacing": "Show player facing (arms and pointer)"
     },
     "bank": {
       "categories": {
@@ -383,7 +390,12 @@
       },
       "readOnly": "Read-only 3D view: drag to orbit, pinch or scroll to zoom. Switch back to 2D to edit.",
       "loading": "Loading the 3D view…",
-      "unsupported": "This device cannot display 3D (WebGL unavailable). The 2D view and exports are still available."
+      "unsupported": "This device cannot display 3D (WebGL unavailable). The 2D view and exports are still available.",
+      "figures": "Player style",
+      "figure": {
+        "people": "Figures",
+        "pawns": "Pawns"
+      }
     }
   },
   "dash": {

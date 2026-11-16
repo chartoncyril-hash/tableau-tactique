@@ -7,6 +7,7 @@ import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Line, Path, Rect, T
 import { BALL_SIZE, ballPrims, EQUIPMENT_SIZE, equipmentPrims, type Prim } from "../scene/catalog";
 import { arrowHead, endBar, objectBox, offsetPolyline, PLAYER_RADIUS, sampleLine } from "../scene/geometry";
 import type { SceneObject, Team } from "../scene/types";
+import { ARMS, FACING_TIP } from "../export/svg";
 
 const JERSEY =
   "M-1.1,-1.6 L-0.45,-1.6 Q0,-1.15 0.45,-1.6 L1.1,-1.6 L2.05,-0.75 L1.5,-0.1 L1.1,-0.45 L1.1,1.6 L-1.1,1.6 L-1.1,-0.45 L-1.5,-0.1 L-2.05,-0.75 Z";
@@ -76,6 +77,8 @@ interface Props {
   ink: string;
   draggable: boolean;
   handlers: NodeHandlers;
+  /** Montre l'orientation des joueurs (bras et pointe). */
+  showFacing?: boolean;
 }
 
 const flat = { perfectDrawEnabled: false, shadowForStrokeEnabled: false } as const;
@@ -146,117 +149,151 @@ function Prims({ prims, w, h }: { prims: Prim[]; w: number; h: number }) {
   );
 }
 
-function Shape({ obj, team, ink, photo }: Pick<Props, "obj" | "team" | "ink" | "photo">) {
+function Arms({ color }: { color: string }) {
+  return (
+    <>
+      {ARMS.map((a, i) => (
+        <Ellipse
+          key={i}
+          x={a.x}
+          y={a.y}
+          rotation={a.rotation}
+          radiusX={0.7}
+          radiusY={0.42}
+          fill={color}
+          stroke="#fff"
+          strokeWidth={0.16}
+          listening={false}
+          {...flat}
+        />
+      ))}
+    </>
+  );
+}
+
+function Shape({
+  obj,
+  team,
+  ink,
+  photo,
+  facing,
+}: Pick<Props, "obj" | "team" | "ink" | "photo"> & { facing: boolean }) {
   switch (obj.type) {
     case "player": {
       const R = PLAYER_RADIUS;
       const color = team?.color ?? "#6b7280";
       const patterned = !!team?.pattern && team.pattern !== "plain";
       const fill = teamFill(team, obj.look === "jersey" ? 2.05 : R);
+      const jersey = obj.look === "jersey";
       return (
         <>
           <HitDisc radius={R} />
-          {obj.goalkeeper && (
-            <Circle radius={R + 0.42} stroke="#facc15" strokeWidth={0.26} listening={false} />
-          )}
-          {obj.look === "jersey" ? (
-            <Path data={JERSEY} {...fill} stroke="#fff" strokeWidth={0.16} lineJoin="round" {...flat} />
-          ) : (
-            <Circle radius={R} {...fill} stroke="#fff" strokeWidth={0.22} {...flat} />
-          )}
-          {photo && obj.look !== "jersey" && (
-            <>
-              {/* Photo ronde, cerclée aux couleurs de l'équipe ; le numéro passe en pastille. */}
-              <Group
-                listening={false}
-                clipFunc={(ctx) => {
-                  ctx.arc(0, 0, R - 0.2, 0, Math.PI * 2);
-                }}
-              >
-                <KonvaImage image={photo} x={-R} y={-R} width={R * 2} height={R * 2} />
-              </Group>
-              <Circle radius={R - 0.1} stroke={color} strokeWidth={0.32} listening={false} />
-              <Circle x={R * 0.78} y={R * 0.78} radius={0.75} fill={color} stroke="#fff" strokeWidth={0.1} listening={false} />
-              <Text
-                text={obj.number}
-                x={R * 0.78}
-                y={R * 0.78}
-                fontSize={0.85}
-                fontStyle="bold"
-                fill={contrastOn(color)}
-                width={1.5}
-                height={1.5}
-                offsetX={0.75}
-                offsetY={0.7}
-                align="center"
-                verticalAlign="middle"
-                listening={false}
-              />
-            </>
-          )}
-          <Text
-            visible={!(photo && obj.look !== "jersey")}
-            text={obj.number}
-            fontSize={1.7}
-            fontStyle="bold"
-            fill={patterned ? "#ffffff" : contrastOn(color)}
-            stroke={patterned ? "#111827" : undefined}
-            strokeWidth={patterned ? 0.32 : 0}
-            fillAfterStrokeEnabled
-            width={R * 2}
-            height={R * 2}
-            offsetX={R}
-            offsetY={R - 0.08}
-            align="center"
-            verticalAlign="middle"
-            listening={false}
-          />
-          {obj.captain && (
-            <>
-              <Circle x={R * 0.85} y={-R * 0.85} radius={0.62} fill="#facc15" stroke="#111827" strokeWidth={0.1} listening={false} />
-              <Text
-                text="C"
-                x={R * 0.85}
-                y={-R * 0.85}
-                fontSize={0.85}
-                fontStyle="bold"
-                fill="#111827"
-                width={1.24}
-                height={1.24}
-                offsetX={0.62}
-                offsetY={0.58}
-                align="center"
-                verticalAlign="middle"
-                listening={false}
-              />
-            </>
-          )}
-          {obj.name ? (
+          {/* Bras : ils sortent des épaules, côté avant (le repère tourne avec le joueur). */}
+          {facing && !jersey && <Arms color={color} />}
+          {/* Tout ce qui se lit reste droit à l'écran, quelle que soit l'orientation. */}
+          <Group name="upright" rotation={-obj.rotation} listening={false}>
+            {obj.goalkeeper && <Circle radius={R + 0.42} stroke="#facc15" strokeWidth={0.26} listening={false} />}
+            {jersey ? (
+              <Path data={JERSEY} {...fill} stroke="#fff" strokeWidth={0.16} lineJoin="round" {...flat} />
+            ) : (
+              <Circle radius={R} {...fill} stroke="#fff" strokeWidth={0.22} {...flat} />
+            )}
+            {photo && !jersey && (
+              <>
+                {/* Photo ronde, cerclée aux couleurs de l'équipe ; le numéro passe en pastille. */}
+                <Group
+                  listening={false}
+                  clipFunc={(ctx) => {
+                    ctx.arc(0, 0, R - 0.2, 0, Math.PI * 2);
+                  }}
+                >
+                  <KonvaImage image={photo} x={-R} y={-R} width={R * 2} height={R * 2} />
+                </Group>
+                <Circle radius={R - 0.1} stroke={color} strokeWidth={0.32} listening={false} />
+                <Circle x={R * 0.78} y={R * 0.78} radius={0.75} fill={color} stroke="#fff" strokeWidth={0.1} listening={false} />
+                <Text
+                  text={obj.number}
+                  x={R * 0.78}
+                  y={R * 0.78}
+                  fontSize={0.85}
+                  fontStyle="bold"
+                  fill={contrastOn(color)}
+                  width={1.5}
+                  height={1.5}
+                  offsetX={0.75}
+                  offsetY={0.7}
+                  align="center"
+                  verticalAlign="middle"
+                  listening={false}
+                />
+              </>
+            )}
             <Text
-              text={obj.name}
-              y={R + 0.35}
-              fontSize={1.3}
-              fontStyle="600"
-              fill={ink}
-              width={16}
-              offsetX={8}
+              visible={!(photo && !jersey)}
+              text={obj.number}
+              fontSize={1.7}
+              fontStyle="bold"
+              fill={patterned ? "#ffffff" : contrastOn(color)}
+              stroke={patterned ? "#111827" : undefined}
+              strokeWidth={patterned ? 0.32 : 0}
+              fillAfterStrokeEnabled
+              width={R * 2}
+              height={R * 2}
+              offsetX={R}
+              offsetY={R - 0.08}
               align="center"
+              verticalAlign="middle"
               listening={false}
             />
-          ) : null}
-          {obj.role ? (
-            <Text
-              text={obj.role}
-              y={-R - 1.55}
-              fontSize={1.05}
-              fill={ink}
-              opacity={0.85}
-              width={10}
-              offsetX={5}
-              align="center"
-              listening={false}
-            />
-          ) : null}
+            {obj.captain && (
+              <>
+                <Circle x={R * 0.85} y={-R * 0.85} radius={0.62} fill="#facc15" stroke="#111827" strokeWidth={0.1} listening={false} />
+                <Text
+                  text="C"
+                  x={R * 0.85}
+                  y={-R * 0.85}
+                  fontSize={0.85}
+                  fontStyle="bold"
+                  fill="#111827"
+                  width={1.24}
+                  height={1.24}
+                  offsetX={0.62}
+                  offsetY={0.58}
+                  align="center"
+                  verticalAlign="middle"
+                  listening={false}
+                />
+              </>
+            )}
+            {obj.name ? (
+              <Text
+                text={obj.name}
+                y={R + 0.35}
+                fontSize={1.3}
+                fontStyle="600"
+                fill={ink}
+                width={16}
+                offsetX={8}
+                align="center"
+                listening={false}
+              />
+            ) : null}
+            {obj.role ? (
+              <Text
+                text={obj.role}
+                y={-R - 1.55}
+                fontSize={1.05}
+                fill={ink}
+                opacity={0.85}
+                width={10}
+                offsetX={5}
+                align="center"
+                listening={false}
+              />
+            ) : null}
+          </Group>
+          {/* Pointe vers l'avant : le regard du joueur. */}
+          {facing && <Line points={FACING_TIP} closed fill="#ffffff" stroke="rgba(17,24,39,0.45)" strokeWidth={0.08} lineJoin="round" listening={false} />}
         </>
       );
     }
@@ -386,7 +423,7 @@ function Shape({ obj, team, ink, photo }: Pick<Props, "obj" | "team" | "ink" | "
 }
 
 /** Un objet de la scène. Mémoïsé : seul un objet modifié est rendu à nouveau. */
-export const ObjectNode = memo(function ObjectNode({ obj, team, ink, photo, draggable, handlers }: Props) {
+export const ObjectNode = memo(function ObjectNode({ obj, team, ink, photo, draggable, handlers, showFacing = true }: Props) {
   const scale = obj.type === "equipment" ? obj.scale : 1;
   return (
     <Group
@@ -403,9 +440,15 @@ export const ObjectNode = memo(function ObjectNode({ obj, team, ink, photo, drag
       onDragMove={handlers.onDragMove}
       onDragEnd={handlers.onDragEnd}
     >
-      <Shape obj={obj} team={team} ink={ink} photo={photo} />
+      <Shape obj={obj} team={team} ink={ink} photo={photo} facing={showFacing} />
     </Group>
   );
 });
 
 export type KonvaNode = Konva.Node;
+
+/** Contre-rotation de la partie lisible d'un joueur (numéro, nom…) quand on le tourne sans React. */
+export function keepUpright(node: Konva.Node, rotation: number) {
+  if (!node.hasName("player")) return;
+  (node as Konva.Group).findOne(".upright")?.rotation(-rotation);
+}
