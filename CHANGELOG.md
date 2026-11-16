@@ -1,5 +1,17 @@
 # Journal des modifications
 
+## Séances : fiche PDF et lien de partage
+
+- Fiche de séance par projet (date, numéro, thème, catégorie, club, entraîneur, principes de jeu,
+  couleur de la fiche) et fiche d'exercice par tableau (procédé, objectif, but, consignes, durée,
+  joueurs, espace, variables, méthode pédagogique, comportements recherchés).
+- Export PDF A4 sur le modèle de fiche des éducateurs : en-tête, matériel et effectif déduits des
+  tableaux, légende des tracés, deux exercices par page, schémas par étape d'animation recadrés
+  sur la zone de jeu.
+- Lien public en lecture seule : fiche et animations lisibles sans compte, PDF téléchargeable ;
+  le PDF porte le lien et son QR code quand un lien est actif. Lien désactivable à tout moment.
+- Correctif : un nouveau tableau n'hérite plus des étapes d'animation du tableau affiché.
+
 ## Phase 4 — Animation
 
 - Étapes d'animation (images clés) par tableau : on ajoute une étape, on déplace les objets, c'est enregistré.
