@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## Phase 3 — Persistance
+
+- Projets enregistrés en ligne, repris sur n'importe quel appareil.
+- Plusieurs tableaux par projet : ajout, renommage, duplication, suppression, copier-coller entre tableaux.
+- Sauvegarde automatique différée, tableau par tableau, avec indicateur d'état et nouvel essai en cas d'échec.
+- Versions restaurables : une à l'ouverture, puis toutes les 5 minutes de travail (50 par tableau).
+- Notes et lien vidéo YouTube ou Vimeo par tableau.
+- Tableau de bord : dossiers, étiquettes, favoris, modèles, recherche (nom, étiquettes, notes).
+- Corbeille avec restauration, purge automatique à 30 jours, confirmation renforcée pour supprimer un dossier.
+- Le formulaire de connexion n'est plus envoyable avant que la page soit active.
+
 ## Phase 2 — Éditeur 2D
 
 - Éditeur accessible sans compte sur `/editor`, utilisable à la souris, au doigt et au stylet.
