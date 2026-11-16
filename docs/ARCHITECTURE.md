@@ -80,6 +80,7 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 | `projects` | projet : nom, dossier, étiquettes, favori, modèle |
 | `boards` | tableau d'un projet : scène JSONB, notes, lien vidéo, position |
 | `board_versions` | instantanés restaurables d'un tableau (50 au plus) |
+| `shares` | liens publics en lecture seule vers un projet |
 
 - **RLS** : chaque table n'est lisible et modifiable que par son propriétaire (`owner_id`).
   Un tableau ne peut être rattaché qu'à un projet du même propriétaire. Le partage par
@@ -99,6 +100,19 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 - Une version est prise avant la première écriture de la session, puis toutes les 5 minutes.
 - Limite connue : deux appareils ouverts sur le même tableau s'écrasent l'un l'autre
   (dernier enregistré gagne) jusqu'à l'édition simultanée de la phase 9.
+
+## Fiche de séance et partage
+
+- Une séance est un projet : l'en-tête est dans `projects.sheet`, chaque exercice est un tableau
+  avec sa fiche dans `boards.sheet` (`src/lib/sheet.ts`, lecture tolérante).
+- PDF généré dans le navigateur (`src/editor/export-pdf.ts`) : schémas rendus hors écran avec
+  Konva (`snapshot.tsx`), mise en page jsPDF (`src/lib/pdf/session-pdf.ts`) avec la police Geist
+  embarquée, QR code par `qrcode`. Ces bibliothèques ne sont chargées qu'au moment de l'export.
+- Lien public : table `shares` (jeton aléatoire de 122 bits, désactivation par `revoked_at`),
+  lecture par `get_shared_project(token)`, seule fonction accessible sans compte. Elle ne
+  renvoie que la fiche et les tableaux non supprimés d'un projet dont le lien est actif.
+- Page publique `/[locale]/s/[token]` : non indexée, sans en-tête Referer, lecteur d'animation
+  autonome (`components/share/board-player.tsx`).
 
 ## Tests de bout en bout
 

@@ -6,12 +6,13 @@ import { createServer } from "node:http";
 
 const PORT = 54321;
 const PASSWORD = "motdepasse-test";
-const tables = { folders: [], projects: [], boards: [], board_versions: [] };
+const tables = { folders: [], projects: [], boards: [], board_versions: [], shares: [] };
 const defaults = {
   folders: () => ({ parent_id: null }),
-  projects: () => ({ folder_id: null, tags: [], favorite: false, is_template: false }),
-  boards: () => ({ position: 0, notes: "", video_url: null }),
+  projects: () => ({ folder_id: null, tags: [], favorite: false, is_template: false, sheet: {} }),
+  boards: () => ({ position: 0, notes: "", video_url: null, sheet: {} }),
   board_versions: () => ({}),
+  shares: () => ({ token: randomUUID().replaceAll("-", ""), revoked_at: null }),
 };
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
@@ -97,9 +98,9 @@ const rpc = {
   duplicate_project(args, owner) {
     const src = tables.projects.find((p) => p.id === args.p_id && p.owner_id === owner);
     if (!src) throw new Error("project not found");
-    const p = insert("projects", { name: args.p_name, folder_id: src.folder_id, tags: [...src.tags], is_template: !!args.p_as_template }, owner);
+    const p = insert("projects", { name: args.p_name, folder_id: src.folder_id, tags: [...src.tags], is_template: !!args.p_as_template, sheet: structuredClone(src.sheet) }, owner);
     for (const b of tables.boards.filter((x) => x.project_id === src.id && !x.deleted_at)) {
-      insert("boards", { project_id: p.id, name: b.name, notes: b.notes, video_url: b.video_url, scene: structuredClone(b.scene), position: b.position }, owner);
+      insert("boards", { project_id: p.id, name: b.name, notes: b.notes, video_url: b.video_url, scene: structuredClone(b.scene), sheet: structuredClone(b.sheet), position: b.position }, owner);
     }
     return p.id;
   },
@@ -161,6 +162,19 @@ const server = createServer(async (req, res) => {
       return user ? send(200, user) : send(401, { code: 401, error_code: "no_authorization", msg: "no session" });
     }
     if (path === "/auth/v1/logout") return send(204);
+
+    // Seule fonction ouverte sans compte, comme dans la vraie base.
+    if (path === "/rest/v1/rpc/get_shared_project") {
+      const { p_token } = await readBody(req);
+      const share = tables.shares.find((x) => x.token === p_token && !x.revoked_at);
+      const project = share && tables.projects.find((x) => x.id === share.project_id && !x.deleted_at);
+      if (!project) return send(200, null);
+      const boards = tables.boards
+        .filter((b) => b.project_id === project.id && !b.deleted_at)
+        .sort((a, b) => a.position - b.position)
+        .map(({ id, name, notes, video_url, sheet, scene }) => ({ id, name, notes, video_url, sheet, scene }));
+      return send(200, { name: project.name, sheet: project.sheet, updated_at: project.updated_at, boards });
+    }
 
     const user = userFromRequest(req);
     if (!user) return send(401, { message: "JWT manquant" });
