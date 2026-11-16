@@ -1,20 +1,27 @@
 "use client";
 
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { playbackTarget, restingPoses } from "../animation/playback";
-import { viewRect } from "../pitches";
+import { playbackTarget, restingPoses, usePlayback } from "../animation/playback";
+import { viewRect, worldRect } from "../pitches";
 import type { Pose } from "../scene/animation";
-import type { Scene, SceneObject } from "../scene/types";
+import type { PlayerObject, Scene, SceneObject } from "../scene/types";
 import { displayObjects, useEditor } from "../store";
 import { cameraPose, isGroundDrawing, sceneOrigin, toWorld, yaw } from "./layout";
 import { Ball3D, Equipment3D, Figure3D, Player3D, strides } from "./models";
-import { groundRect, groundTexture } from "./textures";
+import { analysisTexture, groundRect, groundTexture } from "./textures";
 import { useView3d } from "./view-mode";
 
 const FOV = 40;
+
+/** Caméra orbitale courante : coupée pendant qu'on fait glisser un objet. */
+let orbit: OrbitControls | null = null;
+const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const setCursor = (cursor: string) => {
+  document.body.style.cursor = cursor;
+};
 
 function Ground({ scene, origin }: { scene: Scene; origin: { x: number; y: number } }) {
   const gl = useThree((s) => s.gl);
@@ -59,6 +66,52 @@ function Ground({ scene, origin }: { scene: Scene; origin: { x: number; y: numbe
   );
 }
 
+/** Zones d'influence et lignes du bloc, sur la pelouse, quand elles sont activées dans le panneau. */
+function AnalysisLayer({ scene, step, origin }: { scene: Scene; step: number; origin: { x: number; y: number } }) {
+  const gl = useThree((s) => s.gl);
+  const invalidate = useThree((s) => s.invalidate);
+  const overlays = useEditor((s) => s.overlays);
+  const [shown, setShown] = useState<{ key: string; texture: THREE.Texture | null } | null>(null);
+  const players = useMemo(
+    () => displayObjects(scene, step).filter((o): o is PlayerObject => o.type === "player"),
+    [scene, step],
+  );
+  const active = overlays.voronoi || overlays.blockLines;
+  const key = active ? JSON.stringify([overlays, scene.teams, scene.pitch, players.map((p) => [p.id, p.x, p.y, p.teamId, p.goalkeeper])]) : "";
+  useEffect(() => {
+    invalidate();
+    if (!key) return;
+    let alive = true;
+    let made: THREE.Texture | null = null;
+    // Pendant un glisser, on attend un court instant de calme avant de redessiner.
+    const timer = setTimeout(() => {
+      void analysisTexture(scene, players, overlays, Math.min(gl.capabilities.maxTextureSize, 2048)).then((t) => {
+        made = t;
+        if (!alive) return t?.dispose();
+        setShown({ key, texture: t });
+        invalidate();
+      });
+    }, 60);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+      made?.dispose();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  // Pendant le recalcul, l'ancienne image reste affichée ; désactivée, elle disparaît aussitôt.
+  const texture = key ? shown?.texture : null;
+  if (!texture) return null;
+  const rect = groundRect(scene);
+  const [cx, , cz] = toWorld(rect.x + rect.w / 2, rect.y + rect.h / 2, origin);
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[cx, 0.015, cz]} renderOrder={1}>
+      <planeGeometry args={[rect.w, rect.h]} />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
+    </mesh>
+  );
+}
+
 function ObjectModel({ obj, scene, people }: { obj: SceneObject; scene: Scene; people: boolean }) {
   switch (obj.type) {
     case "player": {
@@ -74,11 +127,65 @@ function ObjectModel({ obj, scene, people }: { obj: SceneObject; scene: Scene; p
   }
 }
 
+/** Taille de la zone de prise d'un objet (avant son échelle propre). */
+function grabSize(obj: SceneObject) {
+  if (obj.type === "player") return { r: 1.3, h: 3.4 };
+  if (obj.type === "ball") return { r: 0.9, h: 1 };
+  return { r: 1.1, h: 1.6 };
+}
+
 /** Objets en relief ; leurs positions suivent l'étape affichée, ou la lecture image par image. */
 function Objects({ scene, step, origin }: { scene: Scene; step: number; origin: { x: number; y: number } }) {
   const invalidate = useThree((s) => s.invalidate);
   const refs = useRef(new Map<string, THREE.Group>());
   const people = useView3d((s) => s.figures === "people");
+  const readOnly = useEditor((s) => s.readOnly);
+  const playing = usePlayback((s) => s.mode !== "idle");
+  const drag = useRef<{ id: string; dx: number; dz: number } | null>(null);
+  const field = worldRect(scene.pitch);
+  const canMove = (obj: SceneObject) => !readOnly && !playing && !obj.locked;
+
+  // Glisser un objet sur la pelouse : même historique (annuler / rétablir) que le glisser en 2D.
+  const hit = (e: ThreeEvent<PointerEvent>) => e.ray.intersectPlane(GROUND, new THREE.Vector3());
+  const onDown = (obj: SceneObject) => (e: ThreeEvent<PointerEvent>) => {
+    if (!canMove(obj) || e.button !== 0) return;
+    const point = hit(e);
+    if (!point) return;
+    e.stopPropagation();
+    (e.target as unknown as Element).setPointerCapture(e.pointerId);
+    const [x, , z] = toWorld(obj.x, obj.y, origin);
+    drag.current = { id: obj.id, dx: x - point.x, dz: z - point.z };
+    if (orbit) orbit.enabled = false;
+    setCursor("grabbing");
+    useEditor.getState().select([obj.id]);
+    useEditor.getState().beginLive();
+  };
+  const onMove = (e: ThreeEvent<PointerEvent>) => {
+    const d = drag.current;
+    if (!d) return;
+    const point = hit(e);
+    if (!point) return;
+    e.stopPropagation();
+    // Reste sur le terrain (avec une petite marge).
+    const x = Math.min(field.x + field.w + 3, Math.max(field.x - 3, point.x + d.dx + origin.x));
+    const y = Math.min(field.y + field.h + 3, Math.max(field.y - 3, point.z + d.dz + origin.y));
+    useEditor.getState().live((draft) => {
+      const target = draft.objects.find((o) => o.id === d.id);
+      if (target) {
+        target.x = Math.round(x * 10) / 10;
+        target.y = Math.round(y * 10) / 10;
+      }
+    });
+  };
+  const onUp = (e: ThreeEvent<PointerEvent>) => {
+    if (!drag.current) return;
+    e.stopPropagation();
+    (e.target as unknown as Element).releasePointerCapture(e.pointerId);
+    drag.current = null;
+    if (orbit) orbit.enabled = true;
+    setCursor("");
+    useEditor.getState().endLive("move");
+  };
   const objects = displayObjects(scene, step).filter((o) => !isGroundDrawing(o));
 
   useEffect(() => {
@@ -134,7 +241,24 @@ function Objects({ scene, step, origin }: { scene: Scene; step: number; origin: 
             position={[x, 0, z]}
             rotation-y={yaw(obj.rotation)}
             scale={scale}
+            onPointerDown={onDown(obj)}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            onPointerOver={() => {
+              if (canMove(obj) && !drag.current) setCursor("grab");
+            }}
+            onPointerOut={() => {
+              if (!drag.current) setCursor("");
+            }}
           >
+            {/* Zone de prise invisible, plus large que le modèle : facile à attraper même de loin. */}
+            {canMove(obj) && (
+              <mesh position-y={grabSize(obj).h / 2}>
+                <cylinderGeometry args={[grabSize(obj).r, grabSize(obj).r, grabSize(obj).h, 12]} />
+                <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+              </mesh>
+            )}
             <ObjectModel obj={obj} scene={scene} people={people} />
           </group>
         );
@@ -161,6 +285,7 @@ function CameraRig({ scene }: { scene: Scene }) {
 
   useEffect(() => {
     const c = new OrbitControls(camera, gl.domElement);
+    orbit = c;
     c.enableDamping = false;
     c.maxPolarAngle = Math.PI * 0.49;
     c.minDistance = 4;
@@ -171,6 +296,7 @@ function CameraRig({ scene }: { scene: Scene }) {
     return () => {
       c.removeEventListener("change", redraw);
       c.dispose();
+      if (orbit === c) orbit = null;
     };
   }, [camera, gl, invalidate]);
 
@@ -214,6 +340,7 @@ export default function View3D() {
   const step = useEditor((s) => s.currentStep);
   const origin = useMemo(() => sceneOrigin(scene.pitch), [scene.pitch]);
   const world = groundRect(scene);
+  useEffect(() => () => setCursor(""), []);
   const shadowSpan = Math.max(world.w, world.h) / 2 + 4;
 
   return (
@@ -245,6 +372,7 @@ export default function View3D() {
         shadow-bias={-0.0004}
       />
       <Ground scene={scene} origin={origin} />
+      <AnalysisLayer scene={scene} step={step} origin={origin} />
       <Objects scene={scene} step={step} origin={origin} />
       <CameraRig scene={scene} />
     </Canvas>

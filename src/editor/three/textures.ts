@@ -1,11 +1,12 @@
 "use client";
 
 import * as THREE from "three";
-import { contrastOn, primSvg, sceneToSvg } from "../export/svg";
+import { contrastOn, escapeXml, primSvg, sceneToSvg } from "../export/svg";
 import { worldRect } from "../pitches";
 import type { Prim } from "../scene/catalog";
 import type { Box } from "../scene/geometry";
-import type { Scene, Team } from "../scene/types";
+import { blockLines, voronoiCells } from "../scene/analysis";
+import type { PlayerObject, Scene, Team } from "../scene/types";
 import { isGroundDrawing } from "./layout";
 
 /** Textures de la vue 3D, dessinées dans le navigateur (aucun fichier à télécharger). */
@@ -181,5 +182,49 @@ export function labelTexture(options: { number: string; name: string; color: str
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
+  return texture;
+}
+
+/**
+ * Surcouches d'analyse posées sur la pelouse (même cadre que `groundTexture`, fond transparent) :
+ * zones d'influence et lignes du bloc, dessinées comme sur le canevas 2D.
+ */
+export async function analysisTexture(
+  scene: Scene,
+  players: PlayerObject[],
+  overlays: { voronoi: boolean; blockLines: boolean },
+  maxSize: number,
+): Promise<THREE.CanvasTexture | null> {
+  const field = worldRect(scene.pitch);
+  const cells = overlays.voronoi ? voronoiCells(players, field, scene.teams) : [];
+  const blocks = overlays.blockLines ? blockLines(players, scene.teams, scene.pitch.orientation, field) : [];
+  if (cells.length === 0 && blocks.length === 0) return null;
+  const full = groundRect(scene);
+  const scale = Math.min(maxSize / full.w, maxSize / full.h, 32);
+  const width = Math.round(full.w * scale);
+  const height = Math.round(full.h * scale);
+  const n = (v: number) => Math.round(v * 100) / 100;
+  const pts = (p: number[]) => p.map(n).join(" ");
+  const parts: string[] = [];
+  for (const cell of cells) {
+    parts.push(`<polygon points="${pts(cell.points)}" fill="${escapeXml(cell.color)}" fill-opacity="0.24" stroke="#fff" stroke-width="0.12"/>`);
+  }
+  for (const team of blocks) {
+    for (const line of team.lines.filter((l) => l.count >= 2)) {
+      parts.push(
+        `<polyline points="${pts(line.points)}" fill="none" stroke="${escapeXml(team.color)}" stroke-opacity="0.85" stroke-width="0.45" stroke-dasharray="1.4 1" stroke-linecap="round" stroke-linejoin="round"/>`,
+      );
+    }
+    for (const gap of team.gaps) {
+      parts.push(
+        `<text x="${n(gap.x)}" y="${n(gap.y)}" font-size="1.5" font-weight="bold" text-anchor="middle" dominant-baseline="central" fill="${escapeXml(scene.pitch.lines)}" stroke="rgba(17,24,39,0.6)" stroke-width="0.25" paint-order="stroke">${escapeXml(gap.label)}</text>`,
+      );
+    }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${n(full.x)} ${n(full.y)} ${n(full.w)} ${n(full.h)}" font-family="Arial, Helvetica, sans-serif">${parts.join("")}</svg>`;
+  const canvas = await loadSvg(svg, width, height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   return texture;
 }

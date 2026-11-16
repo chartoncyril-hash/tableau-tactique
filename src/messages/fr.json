@@ -388,14 +388,15 @@
         "goal": "Derrière le but",
         "corner": "Coin"
       },
-      "readOnly": "Vue 3D en lecture : faites glisser pour tourner, pincez ou molette pour zoomer. Repassez en 2D pour modifier.",
+      "readOnly": "Lecture seule : faites glisser pour tourner, pincez ou molette pour zoomer.",
       "loading": "Chargement de la vue 3D…",
       "unsupported": "Cet appareil ne permet pas l'affichage 3D (WebGL indisponible). La vue 2D et les exports restent disponibles.",
       "figures": "Représentation des joueurs",
       "figure": {
         "people": "Personnages",
         "pawns": "Pions"
-      }
+      },
+      "help": "Faites glisser un joueur, un ballon ou du matériel pour le déplacer. Glissez sur le terrain pour tourner, pincez ou molette pour zoomer. Les tracés et zones se modifient en 2D."
     },
     "readOnly": "Lecture seule : vous êtes lecteur dans ce club. Vous pouvez présenter, lire l'animation, passer en 3D et exporter."
   },

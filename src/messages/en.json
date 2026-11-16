@@ -388,14 +388,15 @@
         "goal": "Behind the goal",
         "corner": "Corner"
       },
-      "readOnly": "Read-only 3D view: drag to orbit, pinch or scroll to zoom. Switch back to 2D to edit.",
+      "readOnly": "Read-only: drag to orbit, pinch or scroll to zoom.",
       "loading": "Loading the 3D view…",
       "unsupported": "This device cannot display 3D (WebGL unavailable). The 2D view and exports are still available.",
       "figures": "Player style",
       "figure": {
         "people": "Figures",
         "pawns": "Pawns"
-      }
+      },
+      "help": "Drag a player, ball or equipment to move it. Drag the pitch to orbit, pinch or scroll to zoom. Lines and zones are edited in 2D."
     },
     "readOnly": "Read-only: you are a viewer in this club. You can present, play the animation, switch to 3D and export."
   },

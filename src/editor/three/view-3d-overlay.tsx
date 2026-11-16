@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CAMERA_PRESETS } from "./layout";
+import { useEditor } from "../store";
 import { setCameraPreset, setFigures, useView3d } from "./view-mode";
 
 // three.js n'est téléchargé qu'à la première ouverture de la vue 3D.
@@ -28,6 +29,7 @@ export function View3dOverlay() {
   const ready = useView3d((s) => s.ready);
   const objects = useView3d((s) => s.objects);
   const figures = useView3d((s) => s.figures);
+  const readOnly = useEditor((s) => s.readOnly);
   const [supported, setSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export function View3dOverlay() {
             ))}
           </div>
           <p className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-1rem)] rounded-md bg-black/55 px-2 py-1 text-xs text-white">
-            {t("readOnly")}
+            {t(readOnly ? "readOnly" : "help")}
           </p>
         </>
       )}

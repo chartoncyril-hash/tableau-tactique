@@ -1,6 +1,5 @@
 "use client";
 
-import { Delaunay } from "d3-delaunay";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +10,6 @@ import { DEFAULT_EQUIPMENT_COLOR, defaultEquipmentScale } from "../scene/catalog
 import {
   arrowHead,
   boxesIntersect,
-  clusterLines,
   objectBox,
   simplify,
   snapPoint,
@@ -21,6 +19,7 @@ import { requestPhotos, usePhotos } from "@/lib/photos";
 import { playbackTarget, restingPoses, usePlayback } from "../animation/playback";
 import { movePath, resolveStep } from "../scene/animation";
 import { displayObjects, lineDefaults, useEditor, type Tool } from "../store";
+import { blockLines, voronoiCells } from "../scene/analysis";
 import { keepUpright, ObjectNode, type NodeHandlers } from "./object-node";
 import { PitchLayer } from "./pitch-layer";
 
@@ -621,10 +620,6 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   useEffect(() => {
     requestPhotos(objects.flatMap((o) => (o.type === "player" && o.photo ? [o.photo] : [])));
   }, [objects]);
-  const teamColors = useMemo(
-    () => new Map(scene.teams.map((t) => [t.id, t.color])),
-    [scene.teams],
-  );
   // Lecture seule : ni déplacement, ni poignées ; on peut seulement regarder.
   const readOnly = useEditor((s) => s.readOnly);
   const selecting = tool.type === "select" && !previewing && !readOnly;
@@ -710,50 +705,15 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   );
   const pitchRect = useMemo(() => worldRect(scene.pitch), [scene.pitch]);
 
-  const voronoi = useMemo(() => {
-    if (!overlays.voronoi || players.length < 2) return [];
-    const diagram = Delaunay.from(players.map((p) => [p.x, p.y] as [number, number])).voronoi([
-      pitchRect.x,
-      pitchRect.y,
-      pitchRect.x + pitchRect.w,
-      pitchRect.y + pitchRect.h,
-    ]);
-    return players.flatMap((p, i) => {
-      const cell = diagram.cellPolygon(i);
-      return cell ? [{ id: p.id, color: teamColors.get(p.teamId) ?? "#6b7280", points: cell.flat() }] : [];
-    });
-  }, [overlays.voronoi, players, pitchRect, teamColors]);
+  const voronoi = useMemo(
+    () => (overlays.voronoi ? voronoiCells(players, pitchRect, scene.teams) : []),
+    [overlays.voronoi, players, pitchRect, scene.teams],
+  );
 
-  const blockLines = useMemo(() => {
-    if (!overlays.blockLines) return [];
-    const horizontal = scene.pitch.orientation === "horizontal";
-    const depth = (p: PlayerObject) => (horizontal ? p.x : p.y);
-    const lateral = (p: PlayerObject) => (horizontal ? p.y : p.x);
-    return scene.teams.flatMap((team) => {
-      const outfield = players
-        .filter((p) => p.teamId === team.id && !p.goalkeeper)
-        .sort((a, b) => depth(a) - depth(b));
-      if (outfield.length < 3) return [];
-      const groups = clusterLines(outfield.map(depth));
-      let index = 0;
-      const lines = groups.map((g) => {
-        const members = outfield.slice(index, index + g.length).sort((a, b) => lateral(a) - lateral(b));
-        index += g.length;
-        const mean = g.reduce((a, b) => a + b, 0) / g.length;
-        return { points: members.flatMap((m) => [m.x, m.y]), mean, count: members.length };
-      });
-      const mid = horizontal ? pitchRect.y + pitchRect.h / 2 : pitchRect.x + pitchRect.w / 2;
-      const gaps = lines.slice(1).map((line, i) => {
-        const at = (line.mean + lines[i].mean) / 2;
-        return {
-          x: horizontal ? at : mid,
-          y: horizontal ? mid : at,
-          label: `${Math.abs(line.mean - lines[i].mean).toFixed(1)} m`,
-        };
-      });
-      return [{ id: team.id, color: team.color, lines, gaps }];
-    });
-  }, [overlays.blockLines, players, scene.teams, scene.pitch.orientation, pitchRect]);
+  const blocks = useMemo(
+    () => (overlays.blockLines ? blockLines(players, scene.teams, scene.pitch.orientation, pitchRect) : []),
+    [overlays.blockLines, players, scene.teams, scene.pitch.orientation, pitchRect],
+  );
 
   // --- Animation -------------------------------------------------------------
   useEffect(() => {
@@ -906,7 +866,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
             {nodes}
           </Layer>
           <Layer ref={overlayRef}>
-            {blockLines.map((team) => (
+            {blocks.map((team) => (
               <BlockLines key={team.id} team={team} ink={scene.pitch.lines} />
             ))}
             {selectedObjects
