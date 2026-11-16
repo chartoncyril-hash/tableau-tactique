@@ -62,7 +62,7 @@ export function Section({ title, children }: { title: string; children: ReactNod
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex items-center justify-between gap-3 text-sm">
-      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className="min-w-0 text-muted-foreground">{label}</span>
       {children}
     </label>
   );
@@ -72,11 +72,11 @@ const control =
   "h-9 min-w-0 rounded-md border border-input bg-card px-2 text-sm disabled:opacity-50";
 
 export function TextInput({ className, ...props }: ComponentProps<"input">) {
-  return <input className={cn(control, "w-36", className)} {...props} />;
+  return <input className={cn(control, "w-36 shrink-0", className)} {...props} />;
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
-  return <select className={cn(control, "w-36", className)} {...props} />;
+  return <select className={cn(control, "w-36 shrink-0", className)} {...props} />;
 }
 
 export function ColorInput({ className, ...props }: ComponentProps<"input">) {
@@ -90,7 +90,7 @@ export function ColorInput({ className, ...props }: ComponentProps<"input">) {
 }
 
 export function Range({ className, ...props }: ComponentProps<"input">) {
-  return <input type="range" className={cn("w-36 accent-primary", className)} {...props} />;
+  return <input type="range" className={cn("w-32 shrink-0 accent-primary", className)} {...props} />;
 }
 
 export function Check({ label, ...props }: { label: string } & ComponentProps<"input">) {

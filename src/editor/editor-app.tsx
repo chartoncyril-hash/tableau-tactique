@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { stop as stopPlayback } from "./animation/playback";
 import { canvasApi, EditorCanvas } from "./canvas/editor-canvas";
 import { closeProject, openProject, useProject } from "./project-session";
 import { createScene, migrateScene } from "./scene/defaults";
@@ -15,6 +16,7 @@ import { BoardTabs } from "./ui/board-tabs";
 import { IconButton } from "./ui/controls";
 import { Panel } from "./ui/panel";
 import { Toolbar } from "./ui/toolbar";
+import { Timeline } from "./ui/timeline";
 import { TopBar } from "./ui/top-bar";
 
 const STORAGE_KEY = "tt:scene:v1";
@@ -128,6 +130,7 @@ export default function EditorApp({ projectId }: { projectId?: string }) {
       else if (mod) handled = false;
       else if (key === "delete" || key === "backspace") s.deleteSelected();
       else if (key === "escape") {
+        stopPlayback();
         s.setTool({ type: "select" });
         s.select([]);
       } else if (key.startsWith("arrow")) {
@@ -172,9 +175,12 @@ export default function EditorApp({ projectId }: { projectId?: string }) {
       {projectId && projectStatus === "ready" && <BoardTabs />}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Toolbar />
-        <main className="relative min-h-0 min-w-0 flex-1">
-          {ready && <EditorCanvas defaultText={t("newText")} />}
-        </main>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <main className="relative min-h-0 min-w-0 flex-1">
+            {ready && <EditorCanvas defaultText={t("newText")} />}
+          </main>
+          <Timeline />
+        </div>
         <aside
           aria-label={t("properties")}
           className={cn(

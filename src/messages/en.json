@@ -297,6 +297,36 @@
       "errorTitle": "Could not load",
       "errorBody": "Check your connection and try again.",
       "backToProjects": "Back to projects"
+    },
+    "anim": {
+      "play": "Play animation",
+      "pause": "Pause",
+      "stop": "Stop playback",
+      "steps": "Animation steps",
+      "start": "Start",
+      "step": "Step {n}",
+      "addStep": "Add a step",
+      "removeStep": "Delete this step",
+      "duration": "Duration",
+      "loop": "Loop playback",
+      "traces": "Show movement paths",
+      "speed": "Playback speed",
+      "scrub": "Position in the animation",
+      "moveTitle": "Movement, step {n}",
+      "delay": "Delayed start",
+      "span": "Movement duration",
+      "ease": "Pace",
+      "eases": {
+        "inOut": "Speeds up then slows",
+        "linear": "Constant",
+        "in": "Speeds up",
+        "out": "Slows down"
+      },
+      "arc": "Lob height",
+      "attach": "Carried by",
+      "attachNone": "Nobody (free ball)",
+      "clearMove": "Remove this movement",
+      "moveHint": "Move the object to set where it ends the step. The orange handle in the middle of the path bends it; double-tap it to straighten."
     }
   },
   "dash": {

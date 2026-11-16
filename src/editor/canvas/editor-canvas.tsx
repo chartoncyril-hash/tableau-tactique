@@ -4,11 +4,12 @@ import { Delaunay } from "d3-delaunay";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Circle, Ellipse, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { Circle, Ellipse, Group, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import { create } from "zustand";
 import { viewRect, worldRect } from "../pitches";
 import { DEFAULT_EQUIPMENT_COLOR, defaultEquipmentScale } from "../scene/catalog";
 import {
+  arrowHead,
   boxesIntersect,
   clusterLines,
   objectBox,
@@ -16,7 +17,9 @@ import {
   snapPoint,
 } from "../scene/geometry";
 import type { PlayerObject, SceneObject } from "../scene/types";
-import { lineDefaults, useEditor, type Tool } from "../store";
+import { playbackTarget, restingPoses, usePlayback } from "../animation/playback";
+import { movePath, resolveStep } from "../scene/animation";
+import { displayObjects, lineDefaults, useEditor, type Tool } from "../store";
 import { ObjectNode, type NodeHandlers } from "./object-node";
 import { PitchLayer } from "./pitch-layer";
 
@@ -79,6 +82,12 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   const selection = useEditor((s) => s.selection);
   const tool = useEditor((s) => s.tool);
   const overlays = useEditor((s) => s.overlays);
+  const step = useEditor((s) => s.currentStep);
+  const previewing = usePlayback((s) => s.mode !== "idle");
+  const playingStep = usePlayback((s) => s.step);
+  const showTraces = usePlayback((s) => s.traces);
+  /** Objets à leur position dans l'étape affichée. */
+  const objects = useMemo(() => displayObjects(scene, step), [scene, step]);
 
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [cam, setCamState] = useState<Cam>({ scale: 8, x: 0, y: 0 });
@@ -270,7 +279,8 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
     const stage = stageRef.current!;
     const evt = e.evt;
     if (pinch.current) return;
-    if (tool.type === "pan" || spaceDown || evt.button === 1) {
+    // Pendant la lecture, le canevas ne sert qu'à déplacer la vue.
+    if (previewing || tool.type === "pan" || spaceDown || evt.button === 1) {
       gesture.current = { kind: "pan", sx: evt.clientX, sy: evt.clientY, cam: camRef.current };
       return;
     }
@@ -394,7 +404,9 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
       const m = marqueeRef.current;
       updateMarquee(null);
       if (m && (m.w > 0.5 || m.h > 0.5)) {
-        const hits = st.scene.objects.filter((o) => boxesIntersect(objectBox(o), m)).map((o) => o.id);
+        const hits = displayObjects(st.scene, st.currentStep)
+          .filter((o) => boxesIntersect(objectBox(o), m))
+          .map((o) => o.id);
         if (hits.length) st.select(hits, g.additive);
       }
       return;
@@ -535,7 +547,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
         const cx: number[] = [];
         const cy: number[] = [];
         let dragged: SceneObject | undefined;
-        for (const o of st.scene.objects) {
+        for (const o of displayObjects(st.scene, st.currentStep)) {
           if (o.id === id) dragged = o;
           if (moving.has(o.id)) {
             if (!o.locked) start.set(o.id, { x: o.x, y: o.y });
@@ -608,11 +620,11 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
     () => new Map(scene.teams.map((t) => [t.id, t.color])),
     [scene.teams],
   );
-  const selecting = tool.type === "select";
+  const selecting = tool.type === "select" && !previewing;
 
   const nodes = useMemo(
     () =>
-      scene.objects.map((obj) => (
+      objects.map((obj) => (
         <ObjectNode
           key={obj.id}
           obj={obj}
@@ -622,13 +634,13 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           handlers={handlers}
         />
       )),
-    [scene.objects, scene.pitch.lines, teamsById, selecting, handlers],
+    [objects, scene.pitch.lines, teamsById, selecting, handlers],
   );
 
   // --- Poignées de transformation --------------------------------------------
   const selectedObjects = useMemo(
-    () => scene.objects.filter((o) => selected.has(o.id)),
-    [scene.objects, selected],
+    () => (previewing ? [] : objects.filter((o) => selected.has(o.id))),
+    [objects, selected, previewing],
   );
 
   useEffect(() => {
@@ -679,8 +691,8 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
 
   // --- Surcouches d'analyse --------------------------------------------------
   const players = useMemo(
-    () => scene.objects.filter((o): o is PlayerObject => o.type === "player"),
-    [scene.objects],
+    () => objects.filter((o): o is PlayerObject => o.type === "player"),
+    [objects],
   );
   const pitchRect = useMemo(() => worldRect(scene.pitch), [scene.pitch]);
 
@@ -728,6 +740,84 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
       return [{ id: team.id, color: team.color, lines, gaps }];
     });
   }, [overlays.blockLines, players, scene.teams, scene.pitch.orientation, pitchRect]);
+
+  // --- Animation -------------------------------------------------------------
+  useEffect(() => {
+    playbackTarget.render = (poses) => {
+      const layer = objectsRef.current;
+      if (!layer) return;
+      const target = poses ?? restingPoses();
+      for (const node of layer.getChildren()) {
+        const pose = target.get(node.id());
+        if (!pose) continue;
+        // Un ballon en cloche monte à l'écran et grossit ; au sol il retrouve sa taille.
+        node.position({ x: pose.x, y: pose.y - pose.lift * 0.35 });
+        node.rotation(pose.rotation);
+        if (node.hasName("ball")) {
+          const scale = 1 + pose.lift * 0.09;
+          node.scale({ x: scale, y: scale });
+        }
+      }
+      layer.batchDraw();
+    };
+    return () => {
+      playbackTarget.render = () => {};
+    };
+  }, []);
+
+  const traceStep = previewing ? playingStep : step;
+  const traces = useMemo(() => {
+    const frame = traceStep >= 1 ? scene.frames?.[traceStep - 1] : undefined;
+    if (!showTraces || !frame) return [];
+    const from = resolveStep(scene, traceStep - 1);
+    return Object.entries(frame.moves).flatMap(([id, move]) => {
+      const start = from.get(id);
+      if (!start || move.attach) return [];
+      const path = movePath(start, move);
+      if (Math.hypot(move.x - start.x, move.y - start.y) < 0.3) return [];
+      return [{ id, start, move, path }];
+    });
+  }, [scene, traceStep, showTraces]);
+
+  const curveTarget =
+    !previewing && selecting && selectedObjects.length === 1 && !selectedObjects[0].locked
+      ? traces.find((trace) => trace.id === selectedObjects[0].id)
+      : undefined;
+
+  // Milieu de la trajectoire : c'est là que se tient la poignée de courbure.
+  const curveMid = curveTarget
+    ? {
+        x:
+          curveTarget.move.cx === undefined
+            ? (curveTarget.start.x + curveTarget.move.x) / 2
+            : 0.25 * curveTarget.start.x + 0.5 * curveTarget.move.cx + 0.25 * curveTarget.move.x,
+        y:
+          curveTarget.move.cy === undefined
+            ? (curveTarget.start.y + curveTarget.move.y) / 2
+            : 0.25 * curveTarget.start.y + 0.5 * curveTarget.move.cy + 0.25 * curveTarget.move.y,
+      }
+    : { x: 0, y: 0 };
+
+  const curveHandle = {
+    onDragStart: () => useEditor.getState().beginLive(),
+    onDragMove: (e: KonvaEventObject<DragEvent>) => {
+      const id = curveTarget?.id;
+      const { x, y } = e.target.position();
+      useEditor.getState().live((draftScene) => {
+        const move = id ? draftScene.frames?.[step - 1]?.moves[id] : undefined;
+        if (move) {
+          // La poignée est sur la courbe : le point de contrôle est son symétrique par rapport à la corde.
+          const from = curveTarget!.start;
+          move.cx = 2 * x - (from.x + move.x) / 2;
+          move.cy = 2 * y - (from.y + move.y) / 2;
+        }
+      });
+    },
+    onDragEnd: () => useEditor.getState().endLive("curveMove"),
+    onDblClick: () =>
+      useEditor.getState().updateMoves({ cx: undefined, cy: undefined }),
+    onDblTap: () => useEditor.getState().updateMoves({ cx: undefined, cy: undefined }),
+  };
 
   // --- Rendu -----------------------------------------------------------------
   const px = 1 / cam.scale;
@@ -800,7 +890,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
               />
             ))}
           </Layer>
-          <Layer ref={objectsRef} listening={selecting || tool.type === "eraser"}>
+          <Layer ref={objectsRef} listening={selecting || (tool.type === "eraser" && !previewing)}>
             {nodes}
           </Layer>
           <Layer ref={overlayRef}>
@@ -825,6 +915,33 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
                   />
                 );
               })}
+            {traces.map((trace) => (
+              <Group key={trace.id} listening={false} opacity={0.8}>
+                <Circle
+                  x={trace.start.x}
+                  y={trace.start.y}
+                  radius={1.5}
+                  stroke={scene.pitch.lines}
+                  strokeWidth={0.18}
+                  dash={[0.5, 0.4]}
+                />
+                <Line points={trace.path} stroke={scene.pitch.lines} strokeWidth={0.22} dash={[0.9, 0.7]} lineCap="round" />
+                <Line points={arrowHead(trace.path, true, 1.3)} closed fill={scene.pitch.lines} />
+              </Group>
+            ))}
+            {curveTarget && (
+              <Circle
+                x={curveMid.x}
+                y={curveMid.y}
+                radius={7 * px}
+                hitStrokeWidth={18 * px}
+                fill={ACCENT}
+                stroke="#fff"
+                strokeWidth={2 * px}
+                draggable
+                {...curveHandle}
+              />
+            )}
             <Transformer
               ref={trRef}
               rotateEnabled
