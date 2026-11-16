@@ -38,14 +38,17 @@ test("fiche de séance : PDF, lien public, animation et désactivation", async (
   await page.locator("body").click({ position: { x: 5, y: 5 } });
   await page.keyboard.press("Control+a");
   await page.keyboard.press("Shift+ArrowRight");
-  await expect(page.getByTestId("save-state")).toHaveAttribute("data-state", "saved");
+  await expect(page.getByTestId("save-state").filter({ visible: true })).toHaveAttribute("data-state", "saved");
 
-  // En-tête de la fiche et lien de partage.
-  await page.getByRole("button", { name: "Fiche de séance" }).click();
-  const dialog = page.getByRole("dialog");
+  // En-tête de la fiche, modifiable en place, et lien de partage.
+  await page.getByRole("link", { name: "Fiche de séance" }).click();
+  await expect(page).toHaveURL(/\/fr\/app\/project\/sheet\?id=/);
+  const dialog = page.locator("main");
   await dialog.getByLabel("Thème de séance", { exact: true }).fill("Déséquilibrer par la passe");
   await dialog.getByLabel("Catégorie", { exact: true }).fill("U13");
-  await dialog.getByLabel("On a le ballon", { exact: true }).fill("Conserver / Progresser\nDéséquilibrer / Finir");
+  await dialog.getByLabel("On a le ballon 1", { exact: true }).fill("Conserver / Progresser");
+  await dialog.getByLabel("On a le ballon 2", { exact: true }).fill("Déséquilibrer / Finir");
+  await expect(dialog.getByLabel("Objectif", { exact: true })).toHaveValue("Changer de rythme pour attaquer");
   await dialog.getByRole("button", { name: "Créer un lien de partage" }).click();
   const link = dialog.getByRole("textbox", { name: /lien/i });
   await expect(link).toHaveValue(/\/fr\/s\/[0-9a-f]{32}$/);
@@ -87,4 +90,47 @@ test("un lien inventé ne montre rien", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Lien inactif" })).toBeVisible();
   await page.goto("/fr/s/pas-un-jeton");
   await expect(page.getByRole("heading", { name: "Lien inactif" })).toBeVisible();
+});
+
+test("la fiche se remplit et se réorganise dans l'app", async ({ page }, info) => {
+  await login(page, info);
+  await page.getByRole("button", { name: "Ajouter un tableau" }).click();
+  await expect(page.getByRole("tab", { name: "Tableau 2" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("link", { name: "Fiche de séance" }).click();
+
+  const first = page.getByRole("article", { name: "Exercice 1" });
+  const second = page.getByRole("article", { name: "Exercice 2" });
+  await expect(first.getByLabel("Nom de l'exercice")).toHaveValue("Tableau 1");
+  await first.getByLabel("Objectif", { exact: true }).fill("Conserver le ballon");
+  await first.getByRole("radio", { name: "Jeu" }).click();
+  await second.getByLabel("Durée", { exact: true }).fill("20 minutes");
+  await page.getByLabel("On n'a pas le ballon 1", { exact: true }).fill("Récupérer vite");
+  await expect(page.getByTestId("save-state").filter({ visible: true })).toHaveAttribute("data-state", "saved");
+
+  // L'exercice 2 passe en tête.
+  await second.getByRole("button", { name: "Monter l'exercice" }).click();
+  await expect(page.getByRole("article", { name: "Exercice 1" }).getByLabel("Nom de l'exercice")).toHaveValue("Tableau 2");
+  await expect(page.getByTestId("save-state").filter({ visible: true })).toHaveAttribute("data-state", "saved");
+
+  await page.reload();
+  const top = page.getByRole("article", { name: "Exercice 1" });
+  const bottom = page.getByRole("article", { name: "Exercice 2" });
+  await expect(top.getByLabel("Durée", { exact: true })).toHaveValue("20 minutes");
+  await expect(bottom.getByLabel("Objectif", { exact: true })).toHaveValue("Conserver le ballon");
+  await expect(bottom.getByRole("radio", { name: "Jeu" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByLabel("On n'a pas le ballon 1", { exact: true })).toHaveValue("Récupérer vite");
+
+  // « Modifier le schéma » ouvre l'éditeur sur le bon tableau.
+  await bottom.getByRole("link", { name: "Modifier le schéma" }).click();
+  await expect(page.getByRole("tab", { name: "Tableau 1" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("navigation", { name: "Tableaux" }).getByRole("tab").first()).toHaveText("Tableau 2");
+
+  // Ajout et suppression d'un exercice depuis la fiche.
+  await page.getByRole("link", { name: "Fiche de séance" }).click();
+  await page.getByRole("button", { name: "Ajouter un exercice" }).click();
+  await expect(page.getByRole("article")).toHaveCount(3);
+  const third = page.getByRole("article", { name: "Exercice 3" });
+  await third.getByRole("button", { name: "Supprimer l'exercice" }).click();
+  await third.getByRole("button", { name: "Confirmer la suppression" }).click();
+  await expect(page.getByRole("article")).toHaveCount(2);
 });

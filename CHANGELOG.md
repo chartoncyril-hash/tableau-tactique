@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## Fiche de séance dans l'application
+
+- Nouvelle page « Fiche de séance » : la fiche se présente comme le PDF (en-tête, principes de jeu,
+  matériel, légende, effectif, un bloc par exercice avec ses schémas) et chaque case se modifie en place.
+- Exercices ajoutés, renommés, réordonnés ou supprimés depuis la fiche ; « Modifier le schéma » ouvre
+  l'éditeur directement sur le bon tableau (`?board=`).
+- Téléchargement du PDF et lien de partage depuis la fiche ; le bouton « Fiche de séance » de l'éditeur
+  y mène (la fenêtre de saisie disparaît).
+- Correctif : la connexion pouvait échouer sur un téléphone lent (formulaire remplacé pendant la saisie,
+  et redirection annulée par un rafraîchissement).
+
 ## Séances : fiche PDF et lien de partage
 
 - Fiche de séance par projet (date, numéro, thème, catégorie, club, entraîneur, principes de jeu,

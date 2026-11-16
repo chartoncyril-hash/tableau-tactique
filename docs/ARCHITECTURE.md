@@ -114,6 +114,12 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 - Page publique `/[locale]/s/[token]` : non indexée, sans en-tête Referer, lecteur d'animation
   autonome (`components/share/board-player.tsx`).
 
+- Page `/[locale]/app/project/sheet?id=` (`src/editor/sheet/`) : même session de projet que
+  l'éditeur, donc même sauvegarde différée ; les schémas sont rendus en file, mis en cache par
+  scène, et recalculés quand un tableau change.
+- Next garde la page précédente en mémoire (masquée) quand on navigue : une page ouvre son
+  projet dans un effet et le referme au démontage, jamais au rendu.
+
 ## Tests de bout en bout
 
 Les parcours Playwright tournent contre `e2e/fake-supabase.mjs`, un faux Supabase en mémoire

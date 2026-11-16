@@ -102,7 +102,8 @@ const onHide = () => {
   if (document.visibilityState === "hidden") void flush();
 };
 
-export async function openProject(id: string) {
+/** Ouvre un projet ; `boardId` choisit le tableau affiché au départ. */
+export async function openProject(id: string, boardId?: string) {
   const mine = ++session;
   closeListeners();
   useProject.setState({ ...initial, status: "loading" });
@@ -121,8 +122,9 @@ export async function openProject(id: string) {
     }));
     const project = { ...data.project, sheet: readSessionSheet(data.project.sheet) };
     for (const b of boards) baseline.set(b.id, b.scene);
-    useProject.setState({ status: "ready", project, boards, currentId: boards[0].id });
-    showScene(boards[0].scene);
+    const first = boards.find((b) => b.id === boardId) ?? boards[0];
+    useProject.setState({ status: "ready", project, boards, currentId: first.id });
+    showScene(first.scene);
     useEditor.setState({ hydrated: true });
 
     unsubscribe = useEditor.subscribe((state, previous) => {
@@ -264,8 +266,13 @@ export async function restoreVersion(id: string) {
 
 /** Modifie un champ de la fiche d'exercice du tableau affiché. */
 export function setDrillField<K extends keyof DrillSheet>(key: K, value: DrillSheet[K] | "") {
-  const { boards, currentId } = useProject.getState();
-  const board = boards.find((b) => b.id === currentId);
+  const { currentId } = useProject.getState();
+  if (currentId) setBoardSheetField(currentId, key, value);
+}
+
+/** Modifie un champ de la fiche d'exercice d'un tableau ; enregistrement différé. */
+export function setBoardSheetField<K extends keyof DrillSheet>(boardId: string, key: K, value: DrillSheet[K] | "") {
+  const board = useProject.getState().boards.find((b) => b.id === boardId);
   if (!board) return;
   const sheet: DrillSheet = { ...board.sheet };
   if (value) sheet[key] = value as DrillSheet[K];
@@ -294,6 +301,32 @@ export function setSessionField(key: keyof SessionSheet, value: string) {
       useProject.setState({ saveState: "error" });
     }
   }, META_DELAY);
+}
+
+/** Déplace un tableau d'un cran vers le début (-1) ou la fin (+1) du projet. */
+export async function moveBoard(id: string, delta: -1 | 1) {
+  const { boards } = useProject.getState();
+  const index = boards.findIndex((b) => b.id === id);
+  const other = boards[index + delta];
+  if (index === -1 || !other) return;
+  const a = boards[index];
+  const next = [...boards];
+  next[index] = { ...other, position: a.position };
+  next[index + delta] = { ...a, position: other.position };
+  // Positions égales (anciens tableaux) : on les rend distinctes.
+  if (a.position === other.position) next.forEach((b, i) => (next[i] = { ...b, position: i }));
+  useProject.setState({ boards: next });
+  useProject.setState({ saveState: "saving" });
+  try {
+    await Promise.all(
+      next
+        .filter((b) => boards.find((o) => o.id === b.id)?.position !== b.position)
+        .map((b) => updateBoard(b.id, { position: b.position })),
+    );
+    useProject.setState({ saveState: dirty.size || metaTimers.size ? "dirty" : "saved" });
+  } catch {
+    useProject.setState({ saveState: "error" });
+  }
 }
 
 /** Tous les tableaux du projet, celui affiché avec sa scène à jour (pour la fiche PDF). */
