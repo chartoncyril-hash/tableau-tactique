@@ -26,10 +26,12 @@ import { FORMATIONS, type FormationId } from "../scene/formations";
 import {
   LINE_KINDS,
   MAX_TEAMS,
+  TEAM_PATTERNS,
   type LineKind,
   type MowStyle,
   type PitchView,
   type SceneObject,
+  type TeamPattern,
 } from "../scene/types";
 import { useEditor } from "../store";
 import { Check, ColorInput, Field, IconButton, Range, Section, Select, TextInput } from "./controls";
@@ -126,6 +128,11 @@ function SelectionSection({ objects }: { objects: SceneObject[] }) {
             </Select>
           </Field>
           <Check
+            label={t("isCaptain")}
+            checked={!!first.captain}
+            onChange={(e) => edit("captain", (o) => o.type === "player" && (o.captain = e.target.checked))}
+          />
+          <Check
             label={t("isGoalkeeper")}
             checked={first.goalkeeper}
             onChange={(e) => edit("gk", (o) => o.type === "player" && (o.goalkeeper = e.target.checked))}
@@ -171,6 +178,8 @@ function SelectionSection({ objects }: { objects: SceneObject[] }) {
             <Check label={t("wavy")} checked={first.wavy} onChange={(e) => edit("wavy", (o) => o.type === "line" && (o.wavy = e.target.checked))} />
             <Check label={t("curved")} checked={first.curved} onChange={(e) => edit("curved", (o) => o.type === "line" && (o.curved = e.target.checked))} />
             <Check label={t("arrowStart")} checked={first.arrowStart} onChange={(e) => edit("arrowStart", (o) => o.type === "line" && (o.arrowStart = e.target.checked))} />
+            <Check label={t("double")} checked={!!first.double} onChange={(e) => edit("double", (o) => o.type === "line" && (o.double = e.target.checked))} />
+            <Check label={t("barEnd")} checked={!!first.barEnd} onChange={(e) => edit("barEnd", (o) => o.type === "line" && (o.barEnd = e.target.checked))} />
             <Check label={t("arrowEnd")} checked={first.arrowEnd} onChange={(e) => edit("arrowEnd", (o) => o.type === "line" && (o.arrowEnd = e.target.checked))} />
           </div>
         </>
@@ -180,6 +189,15 @@ function SelectionSection({ objects }: { objects: SceneObject[] }) {
         <>
           <Field label={t("fill")}>
             <ColorInput value={first.fill} onChange={(e) => edit("fill", (o) => o.type === "zone" && (o.fill = e.target.value))} />
+          </Field>
+          <Field label={t("pattern")}>
+            <Select
+              value={first.pattern ?? "solid"}
+              onChange={(e) => edit("pattern", (o) => o.type === "zone" && (o.pattern = e.target.value as "solid" | "hatch"))}
+            >
+              <option value="solid">{t("patterns.solid")}</option>
+              <option value="hatch">{t("patterns.hatch")}</option>
+            </Select>
           </Field>
           <Field label={t("opacity")}>
             <Range min={0.1} max={1} step={0.05} value={first.opacity} onChange={(e) => edit("opacity", (o) => o.type === "zone" && (o.opacity = Number(e.target.value)))} />
@@ -304,25 +322,48 @@ export function Panel() {
 
       <Section title={t("teams")}>
         {teams.map((team) => (
-          <div key={team.id} className="flex items-center gap-2">
-            <ColorInput
-              aria-label={t("color")}
-              value={team.color}
-              onChange={(e) => s.updateTeam(team.id, { color: e.target.value }, `team:${team.id}:color`)}
-            />
-            <TextInput
-              aria-label={t("teamName")}
-              className="flex-1"
-              value={team.name}
-              maxLength={24}
-              onChange={(e) => s.updateTeam(team.id, { name: e.target.value }, `team:${team.id}:name`)}
-            />
-            <IconButton
-              icon={Trash2}
-              label={t("removeTeam")}
-              disabled={teams.length <= 1}
-              onClick={() => s.removeTeam(team.id)}
-            />
+          <div key={team.id} className="flex flex-col gap-2 rounded-md border p-2">
+            <div className="flex items-center gap-2">
+              <ColorInput
+                aria-label={t("color")}
+                value={team.color}
+                onChange={(e) => s.updateTeam(team.id, { color: e.target.value }, `team:${team.id}:color`)}
+              />
+              <TextInput
+                aria-label={t("teamName")}
+                className="w-0 flex-1"
+                value={team.name}
+                maxLength={24}
+                onChange={(e) => s.updateTeam(team.id, { name: e.target.value }, `team:${team.id}:name`)}
+              />
+              <IconButton
+                icon={Trash2}
+                label={t("removeTeam")}
+                disabled={teams.length <= 1}
+                onClick={() => s.removeTeam(team.id)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <ColorInput
+                aria-label={t("color2")}
+                title={t("color2")}
+                value={team.color2 ?? "#111827"}
+                disabled={!team.pattern || team.pattern === "plain"}
+                onChange={(e) => s.updateTeam(team.id, { color2: e.target.value }, `team:${team.id}:color2`)}
+              />
+              <Select
+                aria-label={t("teamPattern")}
+                className="w-0 flex-1"
+                value={team.pattern ?? "plain"}
+                onChange={(e) => s.updateTeam(team.id, { pattern: e.target.value as TeamPattern })}
+              >
+                {TEAM_PATTERNS.map((pattern) => (
+                  <option key={pattern} value={pattern}>
+                    {t(`teamPatterns.${pattern}`)}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
         ))}
         {teams.length < MAX_TEAMS && (

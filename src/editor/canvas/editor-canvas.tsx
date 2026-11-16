@@ -16,7 +16,7 @@ import {
   snapPoint,
 } from "../scene/geometry";
 import type { PlayerObject, SceneObject } from "../scene/types";
-import { lineDefaults, useEditor } from "../store";
+import { lineDefaults, useEditor, type Tool } from "../store";
 import { ObjectNode, type NodeHandlers } from "./object-node";
 import { PitchLayer } from "./pitch-layer";
 
@@ -34,7 +34,8 @@ type DraftShape =
 type Gesture =
   | { kind: "pan"; sx: number; sy: number; cam: Cam }
   | { kind: "marquee"; x0: number; y0: number; additive: boolean }
-  | { kind: "draw" };
+  | { kind: "draw" }
+  | { kind: "erase" };
 
 const MIN_SCALE = 1.5;
 const MAX_SCALE = 90;
@@ -48,6 +49,11 @@ export const canvasApi: { fit: () => void; zoomBy: (factor: number) => void } = 
   fit: () => {},
   zoomBy: () => {},
 };
+
+const zoneStyle = (tool: Tool) =>
+  tool.type === "zone" && tool.hatch
+    ? { pattern: "hatch" as const, opacity: 0.7 }
+    : { pattern: "solid" as const, opacity: 0.3 };
 
 const transformable = (o: SceneObject) =>
   !o.locked &&
@@ -77,6 +83,9 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [cam, setCamState] = useState<Cam>({ scale: 8, x: 0, y: 0 });
   const camRef = useRef(cam);
+  const sizeRef = useRef(size);
+  /** Vrai dès que l'utilisateur a zoomé ou déplacé la vue : on ne recadre plus à sa place. */
+  const userMoved = useRef(false);
   const fitScaleRef = useRef(8);
   const [draft, setDraft] = useState<DraftShape | null>(null);
   const draftRef = useRef<DraftShape | null>(null);
@@ -128,21 +137,24 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   }, []);
 
   const fit = useCallback(() => {
-    if (!size.w || !size.h) return;
+    const { w, h } = sizeRef.current;
+    if (!w || !h) return;
     const rect = viewRect(useEditor.getState().scene.pitch);
     const pad = 5;
-    const scale = Math.min(size.w / (rect.w + pad * 2), size.h / (rect.h + pad * 2));
+    const scale = Math.min(w / (rect.w + pad * 2), h / (rect.h + pad * 2));
     fitScaleRef.current = scale;
+    userMoved.current = false;
     setCam({
       scale,
-      x: (size.w - rect.w * scale) / 2 - rect.x * scale,
-      y: (size.h - rect.h * scale) / 2 - rect.y * scale,
+      x: (w - rect.w * scale) / 2 - rect.x * scale,
+      y: (h - rect.h * scale) / 2 - rect.y * scale,
     });
-  }, [size.w, size.h, setCam]);
+  }, [setCam]);
 
   const zoomAt = useCallback(
     (sx: number, sy: number, scale: number) => {
       const c = camRef.current;
+      userMoved.current = true;
       const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
       const wx = (sx - c.x) / c.scale;
       const wy = (sy - c.y) / c.scale;
@@ -152,14 +164,29 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- recadrage après mesure du conteneur ou changement de terrain
+    // Recadrage quand le terrain change.
     fit();
   }, [fit, scene.pitch.view, scene.pitch.orientation, scene.pitch.sport]);
 
   useEffect(() => {
+    const previous = sizeRef.current;
+    sizeRef.current = size;
+    if (!size.w || !size.h) return;
+    if (userMoved.current && previous.w) {
+      // La zone de dessin change de taille (panneau, barre d'options) : on garde le zoom
+      // choisi et le même point au centre.
+      const c = camRef.current;
+      setCam({ ...c, x: c.x + (size.w - previous.w) / 2, y: c.y + (size.h - previous.h) / 2 });
+    } else {
+      fit();
+    }
+  }, [size, fit, setCam]);
+
+  useEffect(() => {
     canvasApi.fit = fit;
-    canvasApi.zoomBy = (factor) => zoomAt(size.w / 2, size.h / 2, camRef.current.scale * factor);
-  }, [fit, zoomAt, size.w, size.h]);
+    canvasApi.zoomBy = (factor) =>
+      zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, camRef.current.scale * factor);
+  }, [fit, zoomAt]);
 
   // --- Clavier propre au canevas ---------------------------------------------
   const finishPolygon = useCallback(() => {
@@ -192,7 +219,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
         height: 0,
         points: pts.map((v, i) => v - (i % 2 === 0 ? ox : oy)),
         fill: ACCENT,
-        opacity: 0.3,
+        ...zoneStyle(useEditor.getState().tool),
       },
       "addZone",
     );
@@ -226,6 +253,18 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
 
   // --- Gestes sur la scène ---------------------------------------------------
   const world = () => stageRef.current!.getRelativePointerPosition()!;
+
+  /** Gomme : supprime l'objet non verrouillé sous le pointeur. */
+  const eraseAtPointer = () => {
+    const pos = stageRef.current?.getPointerPosition();
+    if (!pos) return;
+    const id = objectsRef.current?.getIntersection(pos)?.findAncestor(".object", true)?.id();
+    if (!id) return;
+    useEditor.getState().live((draftScene) => {
+      const index = draftScene.objects.findIndex((o) => o.id === id && !o.locked);
+      if (index >= 0) draftScene.objects.splice(index, 1);
+    });
+  };
 
   const onPointerDown = (e: KonvaEventObject<PointerEvent>) => {
     const stage = stageRef.current!;
@@ -299,6 +338,11 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           updateDraft({ type: tool.shape, x0: p.x, y0: p.y, x1: p.x, y1: p.y });
         }
         break;
+      case "eraser":
+        gesture.current = { kind: "erase" };
+        st.beginLive();
+        eraseAtPointer();
+        break;
       case "line":
         gesture.current = { kind: "draw" };
         updateDraft({ type: "line", x0: p.x, y0: p.y, x1: p.x, y1: p.y });
@@ -315,7 +359,12 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
     const d = draftRef.current;
     if (pinch.current) return;
     if (g?.kind === "pan") {
+      userMoved.current = true;
       setCam({ ...g.cam, x: g.cam.x + e.evt.clientX - g.sx, y: g.cam.y + e.evt.clientY - g.sy });
+      return;
+    }
+    if (g?.kind === "erase") {
+      eraseAtPointer();
       return;
     }
     if (!g && d?.type !== "polygon") return;
@@ -350,6 +399,12 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
       }
       return;
     }
+    if (g.kind === "erase") {
+      st.endLive("erase");
+      const alive = new Set(useEditor.getState().scene.objects.map((o) => o.id));
+      useEditor.setState({ selection: st.selection.filter((id) => alive.has(id)) });
+      return;
+    }
     if (g.kind !== "draw") return;
     const d = draftRef.current;
     updateDraft(null);
@@ -366,7 +421,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           y: oy,
           rotation: 0,
           points: pts.map((v, i) => v - (i % 2 === 0 ? ox : oy)),
-          width: 0.3,
+          width: st.inkWidth,
           color: st.ink,
         },
         "addFreehand",
@@ -385,7 +440,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           y: d.y0,
           rotation: 0,
           points: [0, 0, dx / 2, dy / 2, dx, dy],
-          ...lineDefaults(kind, st.ink),
+          ...lineDefaults(kind, st.ink, st.inkWidth),
         },
         "addLine",
       );
@@ -404,7 +459,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           height: tiny ? 10 : Math.max(1, Math.abs(d.y1 - d.y0)),
           points: [],
           fill: ACCENT,
-          opacity: 0.3,
+          ...zoneStyle(st.tool),
         },
         "addZone",
       );
@@ -449,6 +504,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
     const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, (p.cam.scale * dist) / p.dist));
     const wx = (p.cx - p.cam.x) / p.cam.scale;
     const wy = (p.cy - p.cam.y) / p.cam.scale;
+    userMoved.current = true;
     setCam({ scale, x: cx - wx * scale, y: cy - wy * scale });
   };
 
@@ -547,6 +603,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   );
 
   const selected = useMemo(() => new Set(selection), [selection]);
+  const teamsById = useMemo(() => new Map(scene.teams.map((t) => [t.id, t])), [scene.teams]);
   const teamColors = useMemo(
     () => new Map(scene.teams.map((t) => [t.id, t.color])),
     [scene.teams],
@@ -559,13 +616,13 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
         <ObjectNode
           key={obj.id}
           obj={obj}
-          teamColor={obj.type === "player" ? (teamColors.get(obj.teamId) ?? "#6b7280") : ""}
+          team={obj.type === "player" ? teamsById.get(obj.teamId) : undefined}
           ink={scene.pitch.lines}
           draggable={selecting && !obj.locked}
           handlers={handlers}
         />
       )),
-    [scene.objects, scene.pitch.lines, teamColors, selecting, handlers],
+    [scene.objects, scene.pitch.lines, teamsById, selecting, handlers],
   );
 
   // --- Poignées de transformation --------------------------------------------
@@ -697,7 +754,13 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   });
 
   const cursor =
-    tool.type === "pan" || spaceDown ? "grab" : tool.type === "select" ? "default" : "crosshair";
+    tool.type === "pan" || spaceDown
+      ? "grab"
+      : tool.type === "select"
+        ? "default"
+        : tool.type === "eraser"
+          ? "cell"
+          : "crosshair";
 
   return (
     <div
@@ -737,7 +800,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
               />
             ))}
           </Layer>
-          <Layer ref={objectsRef} listening={selecting}>
+          <Layer ref={objectsRef} listening={selecting || tool.type === "eraser"}>
             {nodes}
           </Layer>
           <Layer ref={overlayRef}>

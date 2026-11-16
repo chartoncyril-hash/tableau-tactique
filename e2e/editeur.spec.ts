@@ -103,3 +103,26 @@ test("choisir un objet dans la banque et le poser", async ({ page }) => {
   }
   await expect(count(page)).toHaveText("3 objets");
 });
+
+test("la gomme supprime l'objet touché et s'annule", async ({ page }) => {
+  const canvas = await openEditor(page);
+  await page.getByRole("button", { name: "Joueur (P)" }).click();
+  await page.waitForTimeout(300);
+  const box = (await canvas.boundingBox())!;
+  await canvas.click({ position: { x: box.width * 0.4, y: box.height * 0.5 } });
+  await canvas.click({ position: { x: box.width * 0.6, y: box.height * 0.5 } });
+  await expect(count(page)).toHaveText("2 objets");
+
+  await page.getByRole("button", { name: "Gomme (E)" }).click();
+  // La zone de dessin peut avoir changé de hauteur : le terrain reste centré, on laisse le
+  // recadrage se faire puis on remesure.
+  await page.waitForTimeout(300);
+  const after = (await canvas.boundingBox())!;
+  await canvas.click({ position: { x: after.width * 0.4, y: after.height * 0.5 } });
+  await expect(count(page)).toHaveText("1 objet");
+  // Un clic dans le vide ne supprime rien.
+  await canvas.click({ position: { x: 12, y: 12 } });
+  await expect(count(page)).toHaveText("1 objet");
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await expect(count(page)).toHaveText("2 objets");
+});

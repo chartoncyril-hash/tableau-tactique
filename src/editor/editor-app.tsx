@@ -26,6 +26,7 @@ const TOOL_KEYS: Record<string, Tool> = {
   l: { type: "line", kind: "pass" },
   d: { type: "freehand" },
   t: { type: "text", label: false },
+  e: { type: "eraser" },
 };
 
 function stressObjects(count: number): SceneObject[] {

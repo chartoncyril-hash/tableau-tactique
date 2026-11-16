@@ -100,7 +100,8 @@
       "line": "Line (L)",
       "freehand": "Freehand (D)",
       "text": "Text",
-      "label": "Label"
+      "label": "Label",
+      "eraser": "Eraser (E)"
     },
     "equipment": {
       "cone": "Cone",
@@ -127,14 +128,16 @@
     "zones": {
       "rect": "Rectangle",
       "ellipse": "Ellipse",
-      "polygon": "Polygon"
+      "polygon": "Polygon",
+      "hatch": "Hatching"
     },
     "lines": {
       "pass": "Pass",
       "run": "Run",
       "dribble": "Dribble",
       "shot": "Shot",
-      "free": "Free line"
+      "free": "Free line",
+      "block": "Block"
     },
     "looks": {
       "disc": "Disc",
@@ -219,7 +222,23 @@
       "clear": "Clear the board",
       "localSave": "Draft saved on this device. Online saving comes in the next stage.",
       "ink": "Colour",
-      "polygonHint": "Tap to place the corners, then double-tap to close."
+      "polygonHint": "Tap to place the corners, then double-tap to close.",
+      "double": "Double line",
+      "barEnd": "T-shaped end",
+      "pattern": "Pattern",
+      "patterns": {
+        "solid": "Solid",
+        "hatch": "Hatched"
+      },
+      "isCaptain": "Captain",
+      "color2": "Second colour",
+      "teamPattern": "Kit pattern",
+      "teamPatterns": {
+        "plain": "Plain",
+        "stripes": "Stripes",
+        "hoops": "Hoops",
+        "halves": "Halves"
+      }
     },
     "bank": {
       "categories": {
@@ -241,6 +260,11 @@
         "tennis": "Tennis ball",
         "medicine": "Medicine ball"
       }
+    },
+    "widths": {
+      "thin": "Thin line",
+      "medium": "Medium line",
+      "thick": "Thick line"
     }
   }
 }

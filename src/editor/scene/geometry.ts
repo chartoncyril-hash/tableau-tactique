@@ -243,3 +243,44 @@ export function clusterLines(depths: number[], maxLines = 3, minGap = 4): number
   }
   return groups;
 }
+
+/** Décale une polyligne perpendiculairement à sa direction (double trait). */
+export function offsetPolyline(points: number[], distance: number): number[] {
+  const n = points.length / 2;
+  const out: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = Math.max(0, i - 1);
+    const b = Math.min(n - 1, i + 1);
+    const tx = points[b * 2] - points[a * 2];
+    const ty = points[b * 2 + 1] - points[a * 2 + 1];
+    const len = Math.hypot(tx, ty) || 1;
+    out.push(points[i * 2] + (-ty / len) * distance, points[i * 2 + 1] + (tx / len) * distance);
+  }
+  return out;
+}
+
+/** Position et direction unitaire à une extrémité d'une polyligne. */
+export function endFrame(points: number[], atEnd: boolean) {
+  const n = points.length / 2;
+  const i = atEnd ? n - 1 : 0;
+  const j = atEnd ? n - 2 : 1;
+  const tx = points[i * 2] - points[j * 2];
+  const ty = points[i * 2 + 1] - points[j * 2 + 1];
+  const len = Math.hypot(tx, ty) || 1;
+  return { x: points[i * 2], y: points[i * 2 + 1], tx: tx / len, ty: ty / len };
+}
+
+/** Triangle de pointe de flèche, sommet sur l'extrémité. */
+export function arrowHead(points: number[], atEnd: boolean, size: number): number[] {
+  const f = endFrame(points, atEnd);
+  const bx = f.x - f.tx * size;
+  const by = f.y - f.ty * size;
+  const h = size / 2;
+  return [f.x, f.y, bx - f.ty * h, by + f.tx * h, bx + f.ty * h, by - f.tx * h];
+}
+
+/** Barre perpendiculaire à l'extrémité (tracé en T). */
+export function endBar(points: number[], half: number): number[] {
+  const f = endFrame(points, true);
+  return [f.x - f.ty * half, f.y + f.tx * half, f.x + f.ty * half, f.y - f.tx * half];
+}

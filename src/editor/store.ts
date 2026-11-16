@@ -23,7 +23,8 @@ export type Tool =
   | { type: "player"; goalkeeper: boolean }
   | { type: "ball"; style?: BallStyle }
   | { type: "equipment"; kind: EquipmentKind; color?: string }
-  | { type: "zone"; shape: ZoneShape }
+  | { type: "zone"; shape: ZoneShape; hatch?: boolean }
+  | { type: "eraser" }
   | { type: "text"; label: boolean }
   | { type: "line"; kind: LineKind }
   | { type: "freehand" };
@@ -56,6 +57,8 @@ export interface EditorState {
   activeTeamId: string;
   playerLook: PlayerLook;
   ink: string;
+  /** Épaisseur des nouveaux tracés, en mètres. */
+  inkWidth: number;
   overlays: { voronoi: boolean; blockLines: boolean };
   past: HistoryEntry[];
   future: HistoryEntry[];
@@ -76,6 +79,7 @@ export interface EditorState {
   setActiveTeam: (id: string) => void;
   setPlayerLook: (look: PlayerLook) => void;
   setInk: (color: string) => void;
+  setInkWidth: (width: number) => void;
   toggleOverlay: (key: "voronoi" | "blockLines") => void;
 
   select: (ids: string[], additive?: boolean) => void;
@@ -160,6 +164,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
   activeTeamId: "team-a",
   playerLook: "disc",
   ink: DEFAULT_INK,
+  inkWidth: 0.3,
   overlays: { voronoi: false, blockLines: false },
   past: [],
   future: [],
@@ -249,6 +254,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
   setActiveTeam: (id) => set({ activeTeamId: id }),
   setPlayerLook: (look) => set({ playerLook: look }),
   setInk: (color) => set({ ink: color }),
+  setInkWidth: (width) => set({ inkWidth: width }),
   toggleOverlay: (key) =>
     set({ overlays: { ...get().overlays, [key]: !get().overlays[key] } }),
 
@@ -556,6 +562,7 @@ export const useEditor = create<EditorState>()((set, get) => ({
   },
 }));
 
-export function lineDefaults(kind: LineKind, color: string) {
-  return { kind, color, curved: false, ...LINE_STYLES[kind] };
+export function lineDefaults(kind: LineKind, color: string, inkWidth = 0.3) {
+  const style = LINE_STYLES[kind];
+  return { kind, color, curved: false, ...style, width: style.width * (inkWidth / 0.3) };
 }

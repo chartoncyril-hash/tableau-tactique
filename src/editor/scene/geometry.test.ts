@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   alignDeltas,
+  arrowHead,
+  endBar,
+  offsetPolyline,
   clusterLines,
   distributeDeltas,
   sampleLine,
@@ -91,5 +94,20 @@ describe("clusterLines", () => {
 
   it("garde une seule ligne sans écart marqué", () => {
     expect(clusterLines([10, 11, 12])).toEqual([[10, 11, 12]]);
+  });
+});
+
+describe("tracés", () => {
+  it("décale une ligne horizontale vers le bas", () => {
+    expect(offsetPolyline([0, 0, 10, 0], 1)).toEqual([0, 1, 10, 1]);
+  });
+
+  it("pose la pointe de flèche sur l'extrémité", () => {
+    expect(arrowHead([0, 0, 10, 0], true, 2)).toEqual([10, 0, 8, 1, 8, -1]);
+    expect(arrowHead([0, 0, 10, 0], false, 2).slice(0, 2)).toEqual([0, 0]);
+  });
+
+  it("trace la barre du T perpendiculairement", () => {
+    expect(endBar([0, 0, 10, 0], 1)).toEqual([10, 1, 10, -1]);
   });
 });

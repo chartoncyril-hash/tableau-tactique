@@ -3,6 +3,7 @@
 import {
   CircleDot,
   Cone,
+  Eraser,
   Hand,
   MousePointer2,
   MoveUpRight,
@@ -30,9 +31,15 @@ const TOOLS: { tool: Tool; icon: LucideIcon; key: string }[] = [
   { tool: { type: "line", kind: "pass" }, icon: MoveUpRight, key: "line" },
   { tool: { type: "freehand" }, icon: Pencil, key: "freehand" },
   { tool: { type: "text", label: false }, icon: Type, key: "text" },
+  { tool: { type: "eraser" }, icon: Eraser, key: "eraser" },
 ];
 
 const ZONES: ZoneShape[] = ["rect", "ellipse", "polygon"];
+const WIDTHS = [
+  { key: "thin", value: 0.2, dot: 4 },
+  { key: "medium", value: 0.3, dot: 8 },
+  { key: "thick", value: 0.5, dot: 12 },
+] as const;
 
 function sameTool(a: Tool, b: Tool) {
   if (a.type !== b.type) return false;
@@ -51,6 +58,26 @@ export function Toolbar() {
   const setLook = useEditor((s) => s.setPlayerLook);
   const ink = useEditor((s) => s.ink);
   const setInk = useEditor((s) => s.setInk);
+
+  const inkWidth = useEditor((s) => s.inkWidth);
+  const setInkWidth = useEditor((s) => s.setInkWidth);
+
+  const widthPicker = (
+    <div className="flex shrink-0 gap-1.5" role="group" aria-label={t("panel.width")}>
+      {WIDTHS.map(({ key, value, dot }) => (
+        <Chip
+          key={key}
+          active={inkWidth === value}
+          aria-label={t(`widths.${key}`)}
+          title={t(`widths.${key}`)}
+          className="w-11 justify-center px-0 md:w-auto md:flex-1"
+          onClick={() => setInkWidth(value)}
+        >
+          <span className="rounded-full bg-current" style={{ width: dot, height: dot }} />
+        </Chip>
+      ))}
+    </div>
+  );
 
   const inkPicker = (
     <label className="flex shrink-0 items-center gap-2 text-sm">
@@ -82,10 +109,13 @@ export function Toolbar() {
     options = (
       <>
         {ZONES.map((shape) => (
-          <Chip key={shape} active={tool.shape === shape} onClick={() => setTool({ type: "zone", shape })}>
+          <Chip key={shape} active={tool.shape === shape} onClick={() => setTool({ ...tool, shape })}>
             {t(`zones.${shape}`)}
           </Chip>
         ))}
+        <Chip active={!!tool.hatch} onClick={() => setTool({ ...tool, hatch: !tool.hatch })}>
+          {t("zones.hatch")}
+        </Chip>
         {tool.shape === "polygon" && (
           <p className="max-w-52 shrink-0 text-xs text-muted-foreground">{t("panel.polygonHint")}</p>
         )}
@@ -99,11 +129,17 @@ export function Toolbar() {
             {t(`lines.${kind}`)}
           </Chip>
         ))}
+        {widthPicker}
         {inkPicker}
       </>
     );
   } else if (tool.type === "freehand") {
-    options = inkPicker;
+    options = (
+      <>
+        {widthPicker}
+        {inkPicker}
+      </>
+    );
   } else if (tool.type === "text") {
     options = (
       <>

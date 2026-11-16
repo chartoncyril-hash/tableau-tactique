@@ -14,10 +14,17 @@ export interface PitchSettings {
   lines: string;
 }
 
+export const TEAM_PATTERNS = ["plain", "stripes", "hoops", "halves"] as const;
+export type TeamPattern = (typeof TEAM_PATTERNS)[number];
+
 export interface Team {
   id: string;
   name: string;
   color: string;
+  /** Motif des jetons de l'équipe ; absent = uni. */
+  pattern?: TeamPattern;
+  /** Seconde couleur du motif. */
+  color2?: string;
 }
 
 interface Base {
@@ -39,6 +46,7 @@ export interface PlayerObject extends Base {
   role: string;
   look: PlayerLook;
   goalkeeper: boolean;
+  captain?: boolean;
 }
 
 export const BALL_STYLES = [
@@ -103,6 +111,8 @@ export interface ZoneObject extends Base {
   points: number[];
   fill: string;
   opacity: number;
+  /** Absent = remplissage plein. */
+  pattern?: "solid" | "hatch";
 }
 
 export interface TextObject extends Base {
@@ -114,7 +124,7 @@ export interface TextObject extends Base {
   label: boolean;
 }
 
-export const LINE_KINDS = ["pass", "run", "dribble", "shot", "free"] as const;
+export const LINE_KINDS = ["pass", "run", "dribble", "shot", "block", "free"] as const;
 export type LineKind = (typeof LINE_KINDS)[number];
 
 export interface LineObject extends Base {
@@ -127,6 +137,10 @@ export interface LineObject extends Base {
   wavy: boolean;
   arrowStart: boolean;
   arrowEnd: boolean;
+  /** Double trait (tir). */
+  double?: boolean;
+  /** Extrémité en T (blocage, marquage). */
+  barEnd?: boolean;
   width: number;
   color: string;
 }

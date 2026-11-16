@@ -7,7 +7,8 @@
 - Objets : joueurs (pastille ou maillot), gardiens, zones, texte et étiquettes.
 - Banque d'objets à vignettes : 9 ballons et 20 types de matériel en plusieurs couleurs (45 entrées).
 - Tracés : passe, course, conduite, tir, ligne libre, courbes, flèches, main levée lissée.
-- Jusqu'à 4 équipes, 8 formations applicables en un clic.
+- Jusqu'à 4 équipes, 8 formations applicables en un clic ; jetons unis, rayés, cerclés ou mi-partis ; brassard de capitaine.
+- Zones pleines ou hachurées ; tracés à double trait (tir) et à extrémité en T (blocage) ; trois épaisseurs ; gomme.
 - Sélection multiple, groupes, alignement, répartition, guides magnétiques, verrouillage, ordre
   d'empilement, copier-coller, raccourcis clavier, zoom et panoramique.
 - Annuler/rétablir illimité ; brouillon enregistré sur l'appareil.

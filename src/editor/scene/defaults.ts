@@ -39,18 +39,20 @@ export function createScene(names: [string, string] = ["A", "B"]): Scene {
   };
 }
 
-type LineStyle = Pick<
-  LineObject,
-  "dashed" | "wavy" | "arrowStart" | "arrowEnd" | "width"
+type LineStyle = Required<
+  Pick<LineObject, "dashed" | "wavy" | "arrowStart" | "arrowEnd" | "double" | "barEnd" | "width">
 >;
 
-/** Conventions de tracé : passe pleine, course en pointillés, conduite ondulée, tir épais. */
+const base = { dashed: false, wavy: false, arrowStart: false, arrowEnd: true, double: false, barEnd: false, width: 0.3 };
+
+/** Conventions de tracé : passe pleine, course en pointillés, conduite ondulée, tir en double trait, blocage en T. */
 export const LINE_STYLES: Record<LineKind, LineStyle> = {
-  pass: { dashed: false, wavy: false, arrowStart: false, arrowEnd: true, width: 0.3 },
-  run: { dashed: true, wavy: false, arrowStart: false, arrowEnd: true, width: 0.3 },
-  dribble: { dashed: false, wavy: true, arrowStart: false, arrowEnd: true, width: 0.3 },
-  shot: { dashed: false, wavy: false, arrowStart: false, arrowEnd: true, width: 0.6 },
-  free: { dashed: false, wavy: false, arrowStart: false, arrowEnd: false, width: 0.3 },
+  pass: base,
+  run: { ...base, dashed: true },
+  dribble: { ...base, wavy: true },
+  shot: { ...base, double: true, width: 0.22 },
+  block: { ...base, arrowEnd: false, barEnd: true },
+  free: { ...base, arrowEnd: false },
 };
 
 export const DEFAULT_INK = "#ffffff";

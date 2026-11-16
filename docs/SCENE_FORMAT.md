@@ -30,7 +30,7 @@ Types de référence : `src/editor/scene/types.ts`.
     "grass": "#2f8f57",
     "lines": "#f5faf6"
   },
-  "teams": [{ "id": "team-a", "name": "Équipe A", "color": "#1d4ed8" }], // 1 à 4
+  "teams": [{ "id": "team-a", "name": "Équipe A", "color": "#1d4ed8" }], // 1 à 4 ; `pattern` (plain | stripes | hoops | halves) et `color2` facultatifs
   "objects": []                     // ordre = empilement, le dernier est au-dessus
 }
 ```
@@ -41,12 +41,12 @@ Champs communs : `id`, `type`, `x`, `y`, `rotation`, et en option `locked`, `gro
 
 | `type` | Champs propres |
 | --- | --- |
-| `player` | `teamId`, `number`, `name`, `role`, `look` (`disc` \| `jersey`), `goalkeeper` |
+| `player` | `teamId`, `number`, `name`, `role`, `look` (`disc` \| `jersey`), `goalkeeper`, `captain` facultatif |
 | `ball` | `style` facultatif (`classic`, `blue`, `red`, `yellow`, `futsal`, `rugby`, `volley`, `tennis`, `medicine`) |
 | `equipment` | `kind` (20 types, liste dans `EQUIPMENT_KINDS`), `color`, `scale` |
-| `zone` | `shape` (`rect` \| `ellipse` \| `polygon`), `width`, `height`, `points`, `fill`, `opacity` |
+| `zone` | `shape` (`rect` \| `ellipse` \| `polygon`), `width`, `height`, `points`, `fill`, `opacity`, `pattern` facultatif (`solid` \| `hatch`) |
 | `text` | `text`, `size`, `color`, `label` (fond d'étiquette) |
-| `line` | `kind` (`pass`, `run`, `dribble`, `shot`, `free`), `points` `[x0,y0,cx,cy,x1,y1]`, `curved`, `dashed`, `wavy`, `arrowStart`, `arrowEnd`, `width`, `color` |
+| `line` | `kind` (`pass`, `run`, `dribble`, `shot`, `block`, `free`), `points` `[x0,y0,cx,cy,x1,y1]`, `curved`, `dashed`, `wavy`, `arrowStart`, `arrowEnd`, `double` et `barEnd` facultatifs, `width`, `color` |
 | `freehand` | `points`, `width`, `color` |
 
 - Rectangle et ellipse sont centrés sur (`x`, `y`).

@@ -100,7 +100,8 @@
       "line": "Tracé (L)",
       "freehand": "Main levée (D)",
       "text": "Texte",
-      "label": "Étiquette"
+      "label": "Étiquette",
+      "eraser": "Gomme (E)"
     },
     "equipment": {
       "cone": "Cône",
@@ -127,14 +128,16 @@
     "zones": {
       "rect": "Rectangle",
       "ellipse": "Ellipse",
-      "polygon": "Polygone"
+      "polygon": "Polygone",
+      "hatch": "Hachures"
     },
     "lines": {
       "pass": "Passe",
       "run": "Course",
       "dribble": "Conduite",
       "shot": "Tir",
-      "free": "Ligne libre"
+      "free": "Ligne libre",
+      "block": "Blocage"
     },
     "looks": {
       "disc": "Pastille",
@@ -219,7 +222,23 @@
       "clear": "Vider le tableau",
       "localSave": "Brouillon enregistré sur cet appareil. La sauvegarde en ligne arrive à l'étape suivante.",
       "ink": "Couleur",
-      "polygonHint": "Touchez pour poser les sommets, puis touchez deux fois pour fermer."
+      "polygonHint": "Touchez pour poser les sommets, puis touchez deux fois pour fermer.",
+      "double": "Double trait",
+      "barEnd": "Extrémité en T",
+      "pattern": "Motif",
+      "patterns": {
+        "solid": "Plein",
+        "hatch": "Hachures"
+      },
+      "isCaptain": "Capitaine",
+      "color2": "Seconde couleur",
+      "teamPattern": "Motif du maillot",
+      "teamPatterns": {
+        "plain": "Uni",
+        "stripes": "Rayures",
+        "hoops": "Cerclé",
+        "halves": "Mi-parti"
+      }
     },
     "bank": {
       "categories": {
@@ -241,6 +260,11 @@
         "tennis": "Balle de tennis",
         "medicine": "Médecine-ball"
       }
+    },
+    "widths": {
+      "thin": "Trait fin",
+      "medium": "Trait moyen",
+      "thick": "Trait épais"
     }
   }
 }
