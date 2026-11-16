@@ -205,7 +205,40 @@ export function pitchSvg(settings: PitchSettings): string {
   return `<g${transform}>${clip}<g clip-path="url(#${clipId})">${parts.join("")}</g></g>`;
 }
 
-function playerSvg(defs: Defs, obj: Extract<SceneObject, { type: "player" }>, team: Team | undefined, ink: string, photo?: string) {
+/** Mêmes repères que le canevas : pointe devant le jeton, bras de part et d'autre (avant = +x). */
+export const FACING_TIP = [PLAYER_RADIUS + 1.25, 0, PLAYER_RADIUS + 0.1, -0.78, PLAYER_RADIUS + 0.1, 0.78];
+export const ARMS = [
+  { x: PLAYER_RADIUS * 0.3, y: -PLAYER_RADIUS * 0.98, rotation: -18 },
+  { x: PLAYER_RADIUS * 0.3, y: PLAYER_RADIUS * 0.98, rotation: 18 },
+];
+
+function playerSvg(
+  defs: Defs,
+  obj: Extract<SceneObject, { type: "player" }>,
+  team: Team | undefined,
+  ink: string,
+  photo: string | undefined,
+  facing: boolean,
+) {
+  const readable = playerBody(defs, obj, team, ink, photo);
+  const color = team?.color ?? "#6b7280";
+  const jersey = obj.look === "jersey";
+  const arms =
+    facing && !jersey
+      ? ARMS.map(
+          (a) =>
+            `<ellipse${attrs({ rx: 0.7, ry: 0.42, transform: `translate(${n(a.x)} ${n(a.y)}) rotate(${a.rotation})`, fill: color, stroke: "#fff", "stroke-width": 0.16 })}/>`,
+        ).join("")
+      : "";
+  const tip = facing
+    ? `<polygon points="${pts(FACING_TIP)}" fill="#ffffff" stroke="rgba(17,24,39,0.45)" stroke-width="0.08" stroke-linejoin="round"/>`
+    : "";
+  // Numéro, nom et pastilles restent droits : on annule la rotation du joueur.
+  const upright = obj.rotation ? `<g transform="rotate(${n(-obj.rotation)})">${readable}</g>` : readable;
+  return arms + upright + tip;
+}
+
+function playerBody(defs: Defs, obj: Extract<SceneObject, { type: "player" }>, team: Team | undefined, ink: string, photo?: string) {
   const R = PLAYER_RADIUS;
   const color = team?.color ?? "#6b7280";
   const patterned = !!team?.pattern && team.pattern !== "plain";
@@ -305,7 +338,14 @@ function zoneSvg(defs: Defs, obj: Extract<SceneObject, { type: "zone" }>) {
   return `<g opacity="${n(obj.opacity)}">${body}</g>`;
 }
 
-export function objectSvg(defs: Defs, obj: SceneObject, team: Team | undefined, ink: string, photo?: string): string {
+export function objectSvg(
+  defs: Defs,
+  obj: SceneObject,
+  team: Team | undefined,
+  ink: string,
+  photo?: string,
+  facing = true,
+): string {
   const scale = obj.type === "equipment" ? obj.scale : 1;
   const transform = [
     `translate(${n(obj.x)} ${n(obj.y)})`,
@@ -317,7 +357,7 @@ export function objectSvg(defs: Defs, obj: SceneObject, team: Team | undefined, 
   let body: string;
   switch (obj.type) {
     case "player":
-      body = playerSvg(defs, obj, team, ink, photo);
+      body = playerSvg(defs, obj, team, ink, photo, facing);
       break;
     case "ball":
       body = ballPrims(obj.style ?? "classic").map(primSvg).join("");
@@ -362,6 +402,7 @@ export function sceneToSvg(scene: Scene, options: SvgOptions): string {
         o.type === "player" ? teams.get(o.teamId) : undefined,
         ink,
         o.type === "player" && o.photo ? options.photos?.[o.photo] : undefined,
+        !scene.hideFacing,
       ),
     )
     .join("");

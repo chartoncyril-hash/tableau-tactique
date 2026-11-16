@@ -1,5 +1,22 @@
 # Journal des modifications
 
+## Phase 8 — Vue 3D
+
+- Bouton « Vue 3D » dans l'éditeur : le tableau affiché en relief (joueurs aux couleurs et motifs
+  du maillot, numéros, noms, brassard, gardien ; ballons ; plots, piquets, haies, mannequins,
+  murs, buts avec filet, rebondisseur, banc, caisson, bosu). Zones, tracés et textes restent au sol.
+- Quatre points de vue (tribune, dessus, derrière le but, coin) avec transition douce ; rotation
+  et zoom libres à la souris ou au doigt.
+- L'animation se lit en 3D, synchronisée avec la frise (ballon en cloche compris).
+- Lecture seule : Échap ou le même bouton ramène à la 2D. Message clair si l'appareil n'a pas WebGL.
+- three.js n'est téléchargé qu'à la première ouverture de la vue 3D.
+- Personnages en 3D (par défaut) ou pions : footballeurs stylisés aux couleurs du maillot, grand
+  numéro dans le dos, cheveux à l'arrière du crâne ; bras et jambes en foulée pendant la lecture.
+- Orientation des joueurs, en 2D comme en 3D : deux bras et une pointe montrent l'avant du jeton,
+  numéro et nom restent droits. Panneau : quart de tour, demi-tour, « face au but adverse » ;
+  option pour masquer ces repères. Les joueurs regardent le but adverse dès leur placement, et
+  les tableaux existants sont convertis automatiquement.
+
 ## Phase 7 — Exports
 
 - Bouton « Exporter » dans l'éditeur : image PNG (1600 ou 3200 px), image vectorielle SVG,

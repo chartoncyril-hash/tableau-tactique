@@ -17,12 +17,16 @@ import {
   SendToBack,
   Trash2,
   Ungroup,
+  RotateCcw,
+  RotateCw,
+  Repeat2,
+  Goal,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GRASS_PRESETS, LINE_STYLES } from "../scene/defaults";
-import { FORMATIONS, type FormationId } from "../scene/formations";
+import { facingFor, FORMATIONS, type FormationId } from "../scene/formations";
 import {
   EASINGS,
   LINE_KINDS,
@@ -43,6 +47,43 @@ import { Check, ColorInput, Field, IconButton, Range, Section, Select, TextInput
 
 const VIEWS: PitchView[] = ["full", "half", "third", "box", "blank"];
 const MOWS: MowStyle[] = ["stripes", "checker", "plain"];
+
+/** Orientation des joueurs sélectionnés : quart de tour, demi-tour, face au but adverse. */
+function FacingField({ objects }: { objects: SceneObject[] }) {
+  const t = useTranslations("editor.panel");
+  const s = useEditor.getState();
+  const first = objects[0];
+  const degrees = ((Math.round(first.rotation) % 360) + 360) % 360;
+  const turn = (delta: number) =>
+    s.updateSelected(((o: SceneObject) => o.type === "player" && (o.rotation += delta)) as never, "rotate", "edit:facing");
+  const faceGoal = () => {
+    const { scene } = useEditor.getState();
+    s.updateSelected(
+      ((o: SceneObject) => {
+        if (o.type !== "player") return;
+        const side = (Math.max(0, scene.teams.findIndex((team) => team.id === o.teamId)) % 2) as 0 | 1;
+        const target = facingFor(side, scene.pitch.orientation);
+        // Le plus court chemin vers l'orientation visée (utile pendant une animation).
+        const delta = ((((target - o.rotation) % 360) + 540) % 360) - 180;
+        o.rotation += delta;
+      }) as never,
+      "rotate",
+    );
+  };
+  return (
+    <Field label={t("facing")}>
+      <div className="flex items-center gap-0.5">
+        <IconButton icon={RotateCcw} label={t("turnLeft")} onClick={() => turn(-45)} />
+        <IconButton icon={RotateCw} label={t("turnRight")} onClick={() => turn(45)} />
+        <IconButton icon={Repeat2} label={t("halfTurn")} onClick={() => turn(180)} />
+        <IconButton icon={Goal} label={t("faceGoal")} onClick={faceGoal} />
+        <span className="ml-1 w-10 text-right text-xs text-muted-foreground tabular-nums" aria-label={t("facingValue", { degrees })}>
+          {degrees}°
+        </span>
+      </div>
+    </Field>
+  );
+}
 
 function SelectionSection({ objects }: { objects: SceneObject[] }) {
   const t = useTranslations("editor.panel");
@@ -132,6 +173,7 @@ function SelectionSection({ objects }: { objects: SceneObject[] }) {
               <option value="jersey">{tEditor("looks.jersey")}</option>
             </Select>
           </Field>
+          <FacingField objects={objects} />
           {objects.length === 1 && <RosterPlayerField player={first} />}
           <Check
             label={t("isCaptain")}
@@ -489,6 +531,21 @@ export function Panel() {
           ))}
         </div>
         <RosterCompose formation={formation} />
+        <Check
+          label={t("showFacing")}
+          checked={!scene.hideFacing}
+          onChange={(e) =>
+            s.commit(
+              "facing",
+              (draft) => {
+                if (e.target.checked) delete draft.hideFacing;
+                else draft.hideFacing = true;
+              },
+              undefined,
+              true,
+            )
+          }
+        />
       </Section>
 
       <Section title={t("analysis")}>

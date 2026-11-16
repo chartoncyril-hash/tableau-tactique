@@ -143,6 +143,20 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
   (WebCodecs), H.264/MP4 si possible, sinon VP9/WebM. Les deux bibliothèques sont chargées à la demande.
 - Une pause de 0,6 s ouvre l'animation exportée et une de 1,2 s la termine.
 
+## Vue 3D (`src/editor/three`)
+
+- React Three Fiber + three.js (sans drei : `OrbitControls` vient de `three/examples`), chargés
+  par `next/dynamic` à la première ouverture. Rendu à la demande (`frameloop="demand"`).
+- `layout.ts` (sans three, testé) : repère (centre du cadrage à l'origine, `(x, y)` → `(x, 0, y)`),
+  rotation, points de vue de caméra.
+- `textures.ts` : la pelouse réutilise l'export SVG (`pitchSvg` + zones, tracés, textes) rastérisé ;
+  étiquettes, tissus des maillots et vignettes du matériel plat sont dessinés sur des canevas.
+- `models.tsx` : modèles simples ; joueurs ×1,8 et petit matériel ×1,6 pour rester lisibles, buts à
+  taille réelle.
+- La lecture diffuse les poses à tous les abonnés (`playbackTarget.listen`) : le canevas 2D, qui
+  reste monté sous la vue 3D, et la vue 3D elle-même.
+- E2E : Chromium est lancé avec SwiftShader (`playwright.config.ts`) pour disposer de WebGL en CI.
+
 ## Tests de bout en bout
 
 Les parcours Playwright tournent contre `e2e/fake-supabase.mjs`, un faux Supabase en mémoire

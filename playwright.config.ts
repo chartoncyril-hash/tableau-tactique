@@ -12,6 +12,8 @@ export default defineConfig({
     trace: "on-first-retry",
     // PW_CHANNEL=chrome utilise le Chrome installé plutôt que le Chromium de Playwright.
     channel: process.env.PW_CHANNEL || undefined,
+    // WebGL logiciel (SwiftShader) : la vue 3D s'affiche aussi sans carte graphique, en CI.
+    launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
   },
   projects: [
     { name: "ordinateur", use: { ...devices["Desktop Chrome"] } },

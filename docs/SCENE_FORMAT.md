@@ -54,6 +54,15 @@ Champs communs : `id`, `type`, `x`, `y`, `rotation`, et en option `locked`, `gro
 - Pour une ligne, (`cx`, `cy`) est le point de contrôle d'une Bézier quadratique, ignoré si
   `curved` vaut `false`.
 
+## Orientation des joueurs
+
+- Pour un joueur, `rotation` est la direction de son regard : 0 = vers la droite de l'écran,
+  90 = vers le bas, 180 = vers la gauche, 270 = vers le haut.
+- Une scène porte `facing: 1` depuis cette convention. À l'ouverture d'une scène sans ce champ,
+  `migrateScene` ajoute à chaque joueur (et à ses déplacements) l'orientation par défaut de son
+  camp (`facingFor` : camp 0 vers le but de droite ou du haut, camp 1 à l'opposé).
+- `hideFacing: true` masque les bras et la pointe ; numéro, nom et pastilles restent toujours droits.
+
 ## Ajouter un sport
 
 Créer `src/editor/pitches/<sport>.ts` (dimensions, tracés, cadrages, toujours décrits à

@@ -208,6 +208,13 @@ export interface Scene {
   objects: SceneObject[];
   /** Étapes d'animation ; les positions de `objects` sont celles du départ. */
   frames?: Frame[];
+  /**
+   * 1 : la rotation d'un joueur est la direction où il regarde (0 = vers la droite de l'écran).
+   * Absent sur les tableaux plus anciens, convertis à l'ouverture (voir `migrateScene`).
+   */
+  facing?: 1;
+  /** Masque les bras et la pointe qui montrent l'orientation des joueurs. */
+  hideFacing?: boolean;
 }
 
 export const MAX_TEAMS = 4;

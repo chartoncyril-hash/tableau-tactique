@@ -5,7 +5,7 @@ import { Pause, Play, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Rect, Stage } from "react-konva";
-import { ObjectNode, type NodeHandlers } from "@/editor/canvas/object-node";
+import { keepUpright, ObjectNode, type NodeHandlers } from "@/editor/canvas/object-node";
 import { PitchLayer } from "@/editor/canvas/pitch-layer";
 import { viewRect } from "@/editor/pitches";
 import { locate, posesAt, resolveStep, totalDuration } from "@/editor/scene/animation";
@@ -50,6 +50,7 @@ export default function BoardPlayer({ scene }: { scene: Scene }) {
       if (!pose) continue;
       node.position({ x: pose.x, y: pose.y - pose.lift * 0.35 });
       node.rotation(pose.rotation);
+      keepUpright(node, pose.rotation);
       if (node.hasName("ball")) {
         const s = 1 + pose.lift * 0.09;
         node.scale({ x: s, y: s });
@@ -112,6 +113,7 @@ export default function BoardPlayer({ scene }: { scene: Scene }) {
                   ink={scene.pitch.lines}
                   draggable={false}
                   handlers={handlers}
+                  showFacing={!scene.hideFacing}
                 />
               ))}
             </Layer>

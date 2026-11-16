@@ -21,7 +21,7 @@ import { requestPhotos, usePhotos } from "@/lib/photos";
 import { playbackTarget, restingPoses, usePlayback } from "../animation/playback";
 import { movePath, resolveStep } from "../scene/animation";
 import { displayObjects, lineDefaults, useEditor, type Tool } from "../store";
-import { ObjectNode, type NodeHandlers } from "./object-node";
+import { keepUpright, ObjectNode, type NodeHandlers } from "./object-node";
 import { PitchLayer } from "./pitch-layer";
 
 interface Cam {
@@ -638,9 +638,10 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           ink={scene.pitch.lines}
           draggable={selecting && !obj.locked}
           handlers={handlers}
+          showFacing={!scene.hideFacing}
         />
       )),
-    [objects, scene.pitch.lines, teamsById, photos, selecting, handlers],
+    [objects, scene.pitch.lines, scene.hideFacing, teamsById, photos, selecting, handlers],
   );
 
   // --- Poignées de transformation --------------------------------------------
@@ -664,6 +665,11 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
     transformable(single) &&
     (single.type === "zone" || single.type === "equipment" || single.type === "text");
   const freeResize = single?.type === "zone";
+
+  // Pendant une rotation à la poignée, numéro et nom des joueurs restent droits.
+  const onTransform = () => {
+    for (const node of trRef.current?.nodes() ?? []) keepUpright(node, node.rotation());
+  };
 
   const onTransformEnd = () => {
     const trNodes = trRef.current?.nodes() ?? [];
@@ -749,7 +755,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
 
   // --- Animation -------------------------------------------------------------
   useEffect(() => {
-    playbackTarget.render = (poses) => {
+    return playbackTarget.listen((poses) => {
       const layer = objectsRef.current;
       if (!layer) return;
       const target = poses ?? restingPoses();
@@ -759,16 +765,14 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
         // Un ballon en cloche monte à l'écran et grossit ; au sol il retrouve sa taille.
         node.position({ x: pose.x, y: pose.y - pose.lift * 0.35 });
         node.rotation(pose.rotation);
+        keepUpright(node, pose.rotation);
         if (node.hasName("ball")) {
           const scale = 1 + pose.lift * 0.09;
           node.scale({ x: scale, y: scale });
         }
       }
       layer.batchDraw();
-    };
-    return () => {
-      playbackTarget.render = () => {};
-    };
+    });
   }, []);
 
   const traceStep = previewing ? playingStep : step;
@@ -963,6 +967,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
               borderStroke={SELECT}
               anchorStroke={SELECT}
               rotateAnchorOffset={28}
+              onTransform={onTransform}
               onTransformEnd={onTransformEnd}
             />
             {lineHandles &&

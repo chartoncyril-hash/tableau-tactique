@@ -1,6 +1,7 @@
 "use client";
 
 import type Konva from "konva";
+import { keepUpright } from "../canvas/object-node";
 import { ensurePhotos, usePhotos } from "@/lib/photos";
 import { locate, posesAt, totalDuration } from "../scene/animation";
 import type { Scene } from "../scene/types";
@@ -126,6 +127,7 @@ async function renderAnimation(
         if (!pose) continue;
         node.position({ x: pose.x, y: pose.y - pose.lift * 0.35 });
         node.rotation(pose.rotation);
+        keepUpright(node, pose.rotation);
         if (node.hasName("ball")) {
           const scale = 1 + pose.lift * 0.09;
           node.scale({ x: scale, y: scale });

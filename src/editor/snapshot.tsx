@@ -161,6 +161,7 @@ function SnapshotStage({ scene, objects, arrows, rect, width, onReady }: StagePr
             ink={scene.pitch.lines}
             draggable={false}
             handlers={handlers}
+            showFacing={!scene.hideFacing}
           />
         ))}
       </Layer>
