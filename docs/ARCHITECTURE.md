@@ -26,6 +26,7 @@ src/
   lib/supabase/        clients navigateur et serveur
   lib/data/            accès aux projets, tableaux, dossiers et versions
   components/dashboard tableau de bord des projets
+  components/roster    effectifs : équipes, joueurs, maillots
   proxy.ts             langue + rafraîchissement de session + garde /app
 supabase/migrations/   schéma versionné
 e2e/                   parcours Playwright
@@ -81,6 +82,8 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 | `boards` | tableau d'un projet : scène JSONB, notes, lien vidéo, position |
 | `board_versions` | instantanés restaurables d'un tableau (50 au plus) |
 | `shares` | liens publics en lecture seule vers un projet |
+| `teams` | équipes de l'effectif : nom, club, catégorie, maillot (`kit`) |
+| `players` | joueurs d'une équipe : numéro, noms, poste, pied fort, notes, photo |
 
 - **RLS** : chaque table n'est lisible et modifiable que par son propriétaire (`owner_id`).
   Un tableau ne peut être rattaché qu'à un projet du même propriétaire. Le partage par
@@ -119,6 +122,15 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
   scène, et recalculés quand un tableau change.
 - Next garde la page précédente en mémoire (masquée) quand on navigue : une page ouvre son
   projet dans un effet et le referme au démontage, jamais au rendu.
+
+## Effectifs et photos
+
+- `src/lib/roster.ts` : modèle, tri, affectation des joueurs aux places d'une formation, CSV.
+- Photos dans l'espace de stockage privé `player-photos`, dossier `<uid>/` ; RLS sur
+  `storage.objects` et contrôle du chemin dans `players`. Affichage par adresses signées (1 h),
+  chargées par lots et partagées (`src/lib/photos.ts`).
+- Un jeton garde le chemin de la photo (`photo`) et le joueur représenté (`rosterId`) ; sans
+  droit de lecture (lien public), la photo est simplement absente et le jeton reste une pastille.
 
 ## Tests de bout en bout
 
