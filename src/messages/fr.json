@@ -542,5 +542,90 @@
     "diagramAlt": "Schéma {n} de l'exercice",
     "addExercise": "Ajouter un exercice",
     "footerHint": "Tout est enregistré automatiquement et reste modifiable : le PDF et le lien de partage reprennent toujours la dernière version."
+  },
+  "roster": {
+    "title": "Effectifs",
+    "intro": "Vos équipes, leurs joueurs et leurs maillots. Dans l'éditeur, une équipe se compose en un clic à partir d'un effectif.",
+    "newTeam": "Nouvelle équipe",
+    "newTeamName": "Nouvelle équipe",
+    "loading": "Chargement…",
+    "error": "L'opération a échoué. Vérifiez votre connexion puis réessayez.",
+    "empty": "Aucune équipe pour l'instant.",
+    "noDetails": "Club et catégorie à compléter",
+    "back": "Retour aux effectifs",
+    "missingTitle": "Équipe introuvable",
+    "errorTitle": "Chargement impossible",
+    "save": {
+      "saved": "Enregistré",
+      "dirty": "Modifications en attente",
+      "saving": "Enregistrement…",
+      "error": "Échec de l'enregistrement"
+    },
+    "teamFields": {
+      "name": "Nom de l'équipe",
+      "club": "Club",
+      "category": "Catégorie"
+    },
+    "teamPlaceholders": {
+      "name": "Ex. U13 A",
+      "club": "Ex. FC Bresse",
+      "category": "Ex. U13"
+    },
+    "kit": "Maillot",
+    "kitColor": "Couleur",
+    "kitColor2": "Seconde couleur",
+    "kitPattern": "Motif",
+    "players": "{count, plural, =0 {Aucun joueur} one {# joueur} other {# joueurs}}",
+    "addPlayer": "Ajouter un joueur",
+    "importCsv": "Importer un CSV",
+    "exportCsv": "Exporter en CSV",
+    "csvFile": "Fichier CSV de l'effectif",
+    "csvHint": "CSV avec une ligne d'en-tête : numero ; prenom ; nom ; poste ; pied ; notes. Les joueurs importés s'ajoutent à l'effectif.",
+    "csvEmpty": "Aucun joueur reconnu dans ce fichier : vérifiez la ligne d'en-tête (au moins prénom ou nom).",
+    "csvImported": "{count, plural, one {# joueur importé} other {# joueurs importés}}",
+    "noPlayers": "Aucun joueur. Ajoutez-en un, ou importez un fichier CSV.",
+    "unnamed": "Joueur sans nom",
+    "fields": {
+      "number": "Numéro",
+      "numberShort": "N°",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "position": "Poste",
+      "foot": "Pied fort",
+      "notes": "Notes"
+    },
+    "positions": {
+      "G": "Gardien",
+      "D": "Défenseur",
+      "M": "Milieu",
+      "A": "Attaquant"
+    },
+    "feet": {
+      "right": "Droit",
+      "left": "Gauche",
+      "both": "Les deux"
+    },
+    "photoFor": "Photo de {name}",
+    "photoFile": "Fichier photo de {name}",
+    "removePhoto": "Retirer la photo",
+    "deletePlayer": "Supprimer {name}",
+    "confirmDelete": "Confirmer",
+    "deleteTeam": "Supprimer l'équipe",
+    "deleteTeamConfirm": "L'équipe ira à la corbeille avec ses joueurs.",
+    "cancel": "Annuler",
+    "editor": {
+      "title": "Depuis un effectif",
+      "rosterTeam": "Effectif",
+      "boardTeam": "Équipe du tableau",
+      "compose": "Composer en {formation}",
+      "hint": "Remplace les joueurs de cette équipe du tableau par l'effectif, poste par poste, avec noms, numéros, photos et maillot.",
+      "player": "Joueur de l'effectif",
+      "noPlayer": "Aucun"
+    }
+  },
+  "appNav": {
+    "label": "Espace",
+    "projects": "Projets",
+    "teams": "Effectifs"
   }
 }

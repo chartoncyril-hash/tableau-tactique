@@ -30,7 +30,7 @@ Types de référence : `src/editor/scene/types.ts`.
     "grass": "#2f8f57",
     "lines": "#f5faf6"
   },
-  "teams": [{ "id": "team-a", "name": "Équipe A", "color": "#1d4ed8" }], // 1 à 4 ; `pattern` (plain | stripes | hoops | halves) et `color2` facultatifs
+  "teams": [{ "id": "team-a", "name": "Équipe A", "color": "#1d4ed8" }], // 1 à 4 ; `pattern` (plain | stripes | hoops | halves), `color2` et `rosterTeamId` facultatifs
   "objects": []                     // ordre = empilement, le dernier est au-dessus
 }
 ```
@@ -41,7 +41,7 @@ Champs communs : `id`, `type`, `x`, `y`, `rotation`, et en option `locked`, `gro
 
 | `type` | Champs propres |
 | --- | --- |
-| `player` | `teamId`, `number`, `name`, `role`, `look` (`disc` \| `jersey`), `goalkeeper`, `captain` facultatif |
+| `player` | `teamId`, `number`, `name`, `role`, `look` (`disc` \| `jersey`), `goalkeeper`, et en option `captain`, `photo` (chemin de la photo), `rosterId` (joueur de l'effectif) |
 | `ball` | `style` facultatif (`classic`, `blue`, `red`, `yellow`, `futsal`, `rugby`, `volley`, `tennis`, `medicine`) |
 | `equipment` | `kind` (20 types, liste dans `EQUIPMENT_KINDS`), `color`, `scale` |
 | `zone` | `shape` (`rect` \| `ellipse` \| `polygon`), `width`, `height`, `points`, `fill`, `opacity`, `pattern` facultatif (`solid` \| `hatch`) |

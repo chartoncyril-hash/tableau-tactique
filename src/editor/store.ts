@@ -4,6 +4,7 @@ import { getPitch, toHorizontal, toVertical } from "./pitches";
 import { DEFAULT_STEP_DURATION, resolveStep } from "./scene/animation";
 import { createScene, DEFAULT_INK, LINE_STYLES, TEAM_COLORS } from "./scene/defaults";
 import { formationSlots, type FormationId } from "./scene/formations";
+import { assignLineup, shortName, type PlayerRow, type TeamRow } from "@/lib/roster";
 import { alignDeltas, distributeDeltas, type AlignMode } from "./scene/geometry";
 import {
   MAX_TEAMS,
@@ -131,6 +132,8 @@ export interface EditorState {
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
   applyFormation: (teamId: string, formation: FormationId) => void;
+  /** Remplace les joueurs d'une équipe du tableau par une composition tirée de l'effectif. */
+  composeFromRoster: (sceneTeamId: string, roster: TeamRow, players: PlayerRow[], formation: FormationId) => void;
   clearAll: () => void;
 }
 
@@ -705,6 +708,42 @@ export const useEditor = create<EditorState>()((set, get) => ({
       activeTeamId: next.teams[0].id,
       selection: get().selection.filter((s) => next.objects.some((o) => o.id === s)),
     });
+  },
+
+  composeFromRoster(sceneTeamId, roster, players, formation) {
+    const look = get().playerLook;
+    get().commit("compose", (scene) => {
+      const index = scene.teams.findIndex((t) => t.id === sceneTeamId);
+      if (index === -1) return;
+      const team = scene.teams[index];
+      team.name = roster.name;
+      team.color = roster.kit.color;
+      team.pattern = roster.kit.pattern;
+      team.color2 = roster.kit.color2;
+      team.rosterTeamId = roster.id;
+      const slots = formationSlots(formation, (index % 2) as 0 | 1, scene.pitch.sport, scene.pitch.orientation);
+      const lineup = assignLineup(slots, players);
+      scene.objects = scene.objects.filter((o) => o.type !== "player" || o.teamId !== sceneTeamId);
+      slots.forEach((slot, i) => {
+        const player = lineup[i];
+        scene.objects.push({
+          id: newId(),
+          type: "player",
+          x: slot.x,
+          y: slot.y,
+          rotation: 0,
+          teamId: sceneTeamId,
+          number: player?.number || slot.number,
+          name: player ? shortName(player) : "",
+          role: player?.position || slot.role,
+          look,
+          goalkeeper: slot.goalkeeper,
+          ...(player ? { rosterId: player.id } : {}),
+          ...(player?.photo_path ? { photo: player.photo_path } : {}),
+        });
+      });
+    });
+    set({ activeTeamId: sceneTeamId, selection: [] });
   },
 
   applyFormation(teamId, formation) {

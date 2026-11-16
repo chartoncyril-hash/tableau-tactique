@@ -542,5 +542,90 @@
     "diagramAlt": "Drill diagram {n}",
     "addExercise": "Add a drill",
     "footerHint": "Everything saves automatically and stays editable: the PDF and share link always use the latest version."
+  },
+  "roster": {
+    "title": "Squads",
+    "intro": "Your teams, their players and kits. In the editor, a team is lined up in one click from a squad.",
+    "newTeam": "New team",
+    "newTeamName": "New team",
+    "loading": "Loading…",
+    "error": "The operation failed. Check your connection and try again.",
+    "empty": "No teams yet.",
+    "noDetails": "Club and age group to fill in",
+    "back": "Back to squads",
+    "missingTitle": "Team not found",
+    "errorTitle": "Could not load",
+    "save": {
+      "saved": "Saved",
+      "dirty": "Unsaved changes",
+      "saving": "Saving…",
+      "error": "Saving failed"
+    },
+    "teamFields": {
+      "name": "Team name",
+      "club": "Club",
+      "category": "Age group"
+    },
+    "teamPlaceholders": {
+      "name": "E.g. U13 A",
+      "club": "E.g. City FC",
+      "category": "E.g. U13"
+    },
+    "kit": "Kit",
+    "kitColor": "Colour",
+    "kitColor2": "Second colour",
+    "kitPattern": "Pattern",
+    "players": "{count, plural, =0 {No players} one {# player} other {# players}}",
+    "addPlayer": "Add a player",
+    "importCsv": "Import a CSV",
+    "exportCsv": "Export as CSV",
+    "csvFile": "Squad CSV file",
+    "csvHint": "CSV with a header line: number; first name; last name; position; foot; notes. Imported players are added to the squad.",
+    "csvEmpty": "No players found in this file: check the header line (at least first or last name).",
+    "csvImported": "{count, plural, one {# player imported} other {# players imported}}",
+    "noPlayers": "No players. Add one, or import a CSV file.",
+    "unnamed": "Unnamed player",
+    "fields": {
+      "number": "Number",
+      "numberShort": "No.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "position": "Position",
+      "foot": "Strong foot",
+      "notes": "Notes"
+    },
+    "positions": {
+      "G": "Goalkeeper",
+      "D": "Defender",
+      "M": "Midfielder",
+      "A": "Forward"
+    },
+    "feet": {
+      "right": "Right",
+      "left": "Left",
+      "both": "Both"
+    },
+    "photoFor": "Photo of {name}",
+    "photoFile": "Photo file for {name}",
+    "removePhoto": "Remove photo",
+    "deletePlayer": "Delete {name}",
+    "confirmDelete": "Confirm",
+    "deleteTeam": "Delete team",
+    "deleteTeamConfirm": "The team and its players will go to the trash.",
+    "cancel": "Cancel",
+    "editor": {
+      "title": "From a squad",
+      "rosterTeam": "Squad",
+      "boardTeam": "Board team",
+      "compose": "Line up in {formation}",
+      "hint": "Replaces this board team's players with the squad, position by position, with names, numbers, photos and kit.",
+      "player": "Squad player",
+      "noPlayer": "None"
+    }
+  },
+  "appNav": {
+    "label": "Workspace",
+    "projects": "Projects",
+    "teams": "Squads"
   }
 }

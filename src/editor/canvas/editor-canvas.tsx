@@ -17,6 +17,7 @@ import {
   snapPoint,
 } from "../scene/geometry";
 import type { PlayerObject, SceneObject } from "../scene/types";
+import { requestPhotos, usePhotos } from "@/lib/photos";
 import { playbackTarget, restingPoses, usePlayback } from "../animation/playback";
 import { movePath, resolveStep } from "../scene/animation";
 import { displayObjects, lineDefaults, useEditor, type Tool } from "../store";
@@ -616,6 +617,10 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
 
   const selected = useMemo(() => new Set(selection), [selection]);
   const teamsById = useMemo(() => new Map(scene.teams.map((t) => [t.id, t])), [scene.teams]);
+  const photos = usePhotos((s) => s.images);
+  useEffect(() => {
+    requestPhotos(objects.flatMap((o) => (o.type === "player" && o.photo ? [o.photo] : [])));
+  }, [objects]);
   const teamColors = useMemo(
     () => new Map(scene.teams.map((t) => [t.id, t.color])),
     [scene.teams],
@@ -629,12 +634,13 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           key={obj.id}
           obj={obj}
           team={obj.type === "player" ? teamsById.get(obj.teamId) : undefined}
+          photo={obj.type === "player" && obj.photo ? photos[obj.photo] : undefined}
           ink={scene.pitch.lines}
           draggable={selecting && !obj.locked}
           handlers={handlers}
         />
       )),
-    [objects, scene.pitch.lines, teamsById, selecting, handlers],
+    [objects, scene.pitch.lines, teamsById, photos, selecting, handlers],
   );
 
   // --- Poignées de transformation --------------------------------------------

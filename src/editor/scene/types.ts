@@ -25,6 +25,8 @@ export interface Team {
   pattern?: TeamPattern;
   /** Seconde couleur du motif. */
   color2?: string;
+  /** Équipe de l'effectif dont proviennent les joueurs. */
+  rosterTeamId?: string;
 }
 
 interface Base {
@@ -47,6 +49,10 @@ export interface PlayerObject extends Base {
   look: PlayerLook;
   goalkeeper: boolean;
   captain?: boolean;
+  /** Photo du joueur (chemin dans l'espace privé des photos). */
+  photo?: string;
+  /** Joueur de l'effectif représenté par ce jeton. */
+  rosterId?: string;
 }
 
 export const BALL_STYLES = [

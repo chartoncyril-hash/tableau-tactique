@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## Phase 5 — Effectifs
+
+- Onglet « Effectifs » : équipes (nom, club, catégorie) avec maillot configurable (couleurs, motif).
+- Joueurs : numéro, prénom, nom, poste, pied fort, notes, photo ronde ; modification en place,
+  ajout, suppression.
+- Photos recadrées et réduites dans le navigateur, rangées dans un espace privé par utilisateur.
+- Import et export CSV (point-virgule ou virgule, en-têtes français ou anglais).
+- Éditeur : « Composer en 4-4-2 » (ou toute formation) depuis un effectif, poste par poste, avec
+  noms, numéros, photos et maillot ; choix du joueur de l'effectif pour un jeton sélectionné.
+- Photos visibles sur le terrain et dans les schémas du PDF ; jamais sur les liens publics.
+
 ## Fiche de séance dans l'application
 
 - Nouvelle page « Fiche de séance » : la fiche se présente comme le PDF (en-tête, principes de jeu,

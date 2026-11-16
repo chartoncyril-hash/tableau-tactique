@@ -6,13 +6,17 @@ import { createServer } from "node:http";
 
 const PORT = 54321;
 const PASSWORD = "motdepasse-test";
-const tables = { folders: [], projects: [], boards: [], board_versions: [], shares: [] };
+const tables = { folders: [], projects: [], boards: [], board_versions: [], shares: [], teams: [], players: [] };
+/** Fichiers du faux stockage : chemin → { bytes, type }. */
+const files = new Map();
 const defaults = {
   folders: () => ({ parent_id: null }),
   projects: () => ({ folder_id: null, tags: [], favorite: false, is_template: false, sheet: {} }),
   boards: () => ({ position: 0, notes: "", video_url: null, sheet: {} }),
   board_versions: () => ({}),
   shares: () => ({ token: randomUUID().replaceAll("-", ""), revoked_at: null }),
+  teams: () => ({ club: "", category: "", kit: {} }),
+  players: () => ({ first_name: "", last_name: "", number: "", position: "", foot: "", notes: "", photo_path: null }),
 };
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
@@ -41,7 +45,6 @@ function userFromRequest(req) {
   }
 }
 
-const now = () => new Date().toISOString();
 let tick = 0;
 /** Horodatage strictement croissant, pour un tri stable par date de modification. */
 const stamp = () => new Date(Date.now() + ++tick).toISOString();
@@ -78,7 +81,7 @@ function insert(table, body, owner) {
   const row = {
     id: randomUUID(),
     owner_id: owner,
-    created_at: now(),
+    created_at: stamp(),
     updated_at: stamp(),
     deleted_at: null,
     ...defaults[table](),
@@ -119,6 +122,37 @@ const rpc = {
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   },
 };
+
+function readRaw(req) {
+  return new Promise((resolve) => {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+  });
+}
+
+/** Extrait le premier fichier d'un envoi multipart (ce qu'envoie le client de stockage). */
+function firstFile(raw, contentType) {
+  const boundary = /boundary=([^;]+)/.exec(contentType ?? "")?.[1];
+  if (!boundary) return { bytes: raw, type: contentType || "application/octet-stream" };
+  const marker = Buffer.from(`--${boundary}`);
+  let start = raw.indexOf(marker);
+  while (start !== -1) {
+    const next = raw.indexOf(marker, start + marker.length);
+    if (next === -1) break;
+    const part = raw.subarray(start + marker.length, next);
+    const split = part.indexOf("\r\n\r\n");
+    const head = part.subarray(0, split).toString();
+    if (/filename=/.test(head)) {
+      return {
+        bytes: part.subarray(split + 4, part.length - 2),
+        type: /content-type:\s*([^\r\n]+)/i.exec(head)?.[1] ?? "application/octet-stream",
+      };
+    }
+    start = next;
+  }
+  return { bytes: raw, type: "application/octet-stream" };
+}
 
 function readBody(req) {
   return new Promise((resolve) => {
@@ -163,6 +197,15 @@ const server = createServer(async (req, res) => {
     }
     if (path === "/auth/v1/logout") return send(204);
 
+    // Faux stockage : lecture d'une photo par adresse signée, sans compte.
+    const signed = path.match(/^\/storage\/v1\/object\/sign\/player-photos\/(.+)$/);
+    if (signed && req.method === "GET") {
+      const file = files.get(decodeURIComponent(signed[1]));
+      if (!file || url.searchParams.get("token") !== "fake") return send(404, { message: "absent" });
+      res.writeHead(200, { ...cors, "access-control-allow-origin": "*", "content-type": file.type });
+      return res.end(file.bytes);
+    }
+
     // Seule fonction ouverte sans compte, comme dans la vraie base.
     if (path === "/rest/v1/rpc/get_shared_project") {
       const { p_token } = await readBody(req);
@@ -179,6 +222,31 @@ const server = createServer(async (req, res) => {
     const user = userFromRequest(req);
     if (!user) return send(401, { message: "JWT manquant" });
     const owner = user.id;
+
+    // Faux stockage : chacun n'écrit, ne signe et ne supprime que dans son dossier.
+    if (path === "/storage/v1/object/sign/player-photos" && req.method === "POST") {
+      const { paths } = await readBody(req);
+      return send(
+        200,
+        paths.map((p) =>
+          p.startsWith(`${owner}/`) && files.has(p)
+            ? { path: p, signedURL: `/object/sign/player-photos/${p}?token=fake`, error: null }
+            : { path: p, signedURL: null, error: "not found" },
+        ),
+      );
+    }
+    const upload = path.match(/^\/storage\/v1\/object\/player-photos\/(.+)$/);
+    if (upload && req.method === "POST") {
+      const key = decodeURIComponent(upload[1]);
+      if (!key.startsWith(`${owner}/`)) return send(403, { message: "new row violates row-level security policy" });
+      files.set(key, firstFile(await readRaw(req), req.headers["content-type"]));
+      return send(200, { Key: `player-photos/${key}`, Id: randomUUID() });
+    }
+    if (path === "/storage/v1/object/player-photos" && req.method === "DELETE") {
+      const { prefixes } = await readBody(req);
+      const removed = prefixes.filter((p) => p.startsWith(`${owner}/`) && files.delete(p));
+      return send(200, removed.map((name) => ({ name })));
+    }
 
     if (path.startsWith("/rest/v1/rpc/")) {
       const fn = rpc[path.slice("/rest/v1/rpc/".length)];

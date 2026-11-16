@@ -259,3 +259,30 @@ describe("étapes d'animation", () => {
     expect(state().currentStep).toBe(1);
   });
 });
+
+describe("composition depuis l'effectif", () => {
+  const roster = { id: "r1", name: "U13 A", club: "", category: "U13", kit: { color: "#ff0000", pattern: "stripes" as const, color2: "#000000" }, created_at: "", updated_at: "", deleted_at: null };
+  const mk = (id: string, position: "G" | "D" | "M" | "A", number: string, photo: string | null = null) => ({
+    id, team_id: "r1", first_name: `P${id}`, last_name: "", number, position, foot: "" as const, notes: "", photo_path: photo,
+  });
+
+  it("place onze jetons aux couleurs de l'équipe avec noms, numéros et photos", () => {
+    state().addPlayerAt(1, 1, false);
+    const squad = [mk("g", "G", "1", "u/g.jpg"), ...["2", "3", "4", "5"].map((n) => mk(`d${n}`, "D", n)), ...["6", "7", "8", "10"].map((n) => mk(`m${n}`, "M", n)), mk("a9", "A", "9"), mk("a11", "A", "11")];
+    state().composeFromRoster("team-a", roster, squad, "4-4-2");
+    const players = state().scene.objects.filter((o) => o.type === "player");
+    expect(players).toHaveLength(11);
+    expect(state().scene.teams[0]).toMatchObject({ name: "U13 A", color: "#ff0000", pattern: "stripes", rosterTeamId: "r1" });
+    const keeper = players.find((p) => p.type === "player" && p.goalkeeper);
+    expect(keeper).toMatchObject({ name: "Pg", number: "1", photo: "u/g.jpg", rosterId: "g" });
+    state().undo();
+    expect(state().scene.objects).toHaveLength(1);
+  });
+
+  it("garde des jetons numérotés quand l'effectif est incomplet", () => {
+    state().composeFromRoster("team-b", roster, [mk("x", "M", "8")], "4-3-3");
+    const players = state().scene.objects.filter((o) => o.type === "player");
+    expect(players).toHaveLength(11);
+    expect(players.filter((p) => p.type === "player" && p.name)).toHaveLength(1);
+  });
+});
