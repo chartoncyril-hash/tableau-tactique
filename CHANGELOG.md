@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## Phase 7 — Exports
+
+- Bouton « Exporter » dans l'éditeur : image PNG (1600 ou 3200 px), image vectorielle SVG,
+  animation GIF en boucle, vidéo MP4 (1280 ou 1920 px, 30 images/s).
+- Cadrage au choix : terrain affiché, ou zone réellement utilisée par l'exercice.
+- Une image d'étape porte les flèches des déplacements de l'étape, comme dans la fiche PDF.
+- Le SVG est un vrai dessin vectoriel (terrain, joueurs, matériel, tracés, zones, textes, photos
+  intégrées) : il s'ouvre dans Illustrator, Inkscape ou PowerPoint et reste net à toute taille.
+- Tout est calculé dans le navigateur, avec barre de progression et annulation pour les animations.
+  Si le navigateur n'encode pas le H.264, la vidéo est produite en WebM.
+
 ## Phase 5 — Effectifs
 
 - Onglet « Effectifs » : équipes (nom, club, catégorie) avec maillot configurable (couleurs, motif).

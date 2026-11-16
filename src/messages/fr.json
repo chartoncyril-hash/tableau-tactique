@@ -327,6 +327,48 @@
       "attachNone": "Personne (ballon libre)",
       "clearMove": "Supprimer ce déplacement",
       "moveHint": "Déplacez l'objet pour fixer sa position à la fin de l'étape. La poignée orange au milieu de la trajectoire la courbe ; deux touches dessus la redressent."
+    },
+    "export": {
+      "open": "Exporter",
+      "title": "Exporter le tableau",
+      "close": "Fermer",
+      "format": "Format",
+      "formats": {
+        "png": "Image PNG",
+        "svg": "Image SVG",
+        "gif": "Animation GIF",
+        "video": "Vidéo"
+      },
+      "hints": {
+        "png": "Pour un message ou un document",
+        "svg": "Vectoriel, net à toute taille",
+        "gif": "Animation en boucle",
+        "video": "MP4 pour les réseaux et présentations"
+      },
+      "noAnimation": "Ajoutez des étapes d'animation pour exporter un GIF ou une vidéo.",
+      "framing": "Cadrage",
+      "framings": {
+        "view": "Terrain affiché",
+        "crop": "Zone utilisée"
+      },
+      "quality": "Qualité",
+      "qualities": {
+        "standard": "Standard",
+        "high": "Haute"
+      },
+      "pixels": "{width} px de large",
+      "vector": "Vectoriel",
+      "stepNote": "Image de l'étape {step}, avec les flèches de ses déplacements.",
+      "boardNote": "Image du tableau tel qu'il est affiché.",
+      "animationNote": "Toute l'animation, du début à la fin.",
+      "stepSuffix": "etape {step}",
+      "progress": "Progression de l'export",
+      "submit": "Exporter",
+      "working": "Export en cours…",
+      "cancel": "Annuler",
+      "done": "Fichier téléchargé : {name}",
+      "failed": "L'export a échoué. Réessayez.",
+      "videoUnsupported": "Ce navigateur ne sait pas créer de vidéo. Essayez le GIF, ou un navigateur récent (Chrome, Edge, Safari)."
     }
   },
   "dash": {

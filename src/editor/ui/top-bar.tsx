@@ -20,6 +20,7 @@ import { renameProject, useProject } from "../project-session";
 import { useEditor } from "../store";
 import { cn } from "@/lib/utils";
 import { IconButton } from "./controls";
+import { ExportButton } from "./export-dialog";
 
 function ProjectTitle() {
   const t = useTranslations("editor.project");
@@ -117,6 +118,7 @@ export function TopBar({
       <span className="hidden w-12 text-center text-xs text-muted-foreground tabular-nums sm:block">{zoom} %</span>
       <IconButton icon={ZoomIn} label={t("zoomIn")} className="hidden sm:inline-flex" onClick={() => canvasApi.zoomBy(1.25)} />
       <IconButton icon={Maximize} label={t("fit")} onClick={() => canvasApi.fit()} />
+      <ExportButton />
       <IconButton
         icon={SlidersHorizontal}
         label={t("properties")}

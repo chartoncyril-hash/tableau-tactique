@@ -132,6 +132,17 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 - Un jeton garde le chemin de la photo (`photo`) et le joueur représenté (`rosterId`) ; sans
   droit de lecture (lien public), la photo est simplement absente et le jeton reste une pastille.
 
+## Exports (`src/editor/export`)
+
+- `frame.ts` (sans DOM) : objets à une étape, flèches d'une étape, noms de fichiers.
+- `svg.ts` (sans DOM, testé) : rendu vectoriel complet d'une scène, calqué sur `object-node.tsx`
+  et `pitch-layer.tsx`. **Toute évolution du rendu d'un objet sur le canevas doit être reportée ici.**
+- `media.ts` : PNG via la scène Konva hors écran (`mountStage` dans `snapshot.tsx`, partagée avec le
+  PDF) ; GIF et vidéo en appliquant `posesAt` aux nœuds Konva image par image, comme la lecture.
+  GIF : `gifenc`, une palette calculée sur la première image, 12,5 images/s. Vidéo : `mediabunny`
+  (WebCodecs), H.264/MP4 si possible, sinon VP9/WebM. Les deux bibliothèques sont chargées à la demande.
+- Une pause de 0,6 s ouvre l'animation exportée et une de 1,2 s la termine.
+
 ## Tests de bout en bout
 
 Les parcours Playwright tournent contre `e2e/fake-supabase.mjs`, un faux Supabase en mémoire

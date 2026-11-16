@@ -8,9 +8,11 @@ import { ensurePhotos, usePhotos } from "@/lib/photos";
 import { ObjectNode, type NodeHandlers } from "./canvas/object-node";
 import { PitchLayer } from "./canvas/pitch-layer";
 import { viewRect } from "./pitches";
-import { movePath, resolveStep } from "./scene/animation";
-import { BALL_SIZE, ballPrims, EQUIPMENT_SIZE, equipmentPrims, type CatalogItem, type Prim } from "./scene/catalog";
-import { objectBox, sampleLine, unionBox, type Box } from "./scene/geometry";
+import { resolveStep } from "./scene/animation";
+import { objectsAtStep, stepArrows, type ArrowSpec } from "./export/frame";
+import { primSvg } from "./export/svg";
+import { BALL_SIZE, ballPrims, EQUIPMENT_SIZE, equipmentPrims, type CatalogItem } from "./scene/catalog";
+import { objectBox, unionBox, type Box } from "./scene/geometry";
 import type { Scene, SceneObject } from "./scene/types";
 
 /**
@@ -82,58 +84,33 @@ export function diagramAspect(scene: Scene) {
   return (r.w + PAD * 2) / (r.h + PAD * 2);
 }
 
-type ArrowSpec = { points: number[]; dashed: boolean };
+export type Framing = "crop" | "view";
 
-/** Flèches d'une étape, selon la légende : déplacement en pointillés, passe pleine, conduite ondulée. */
-function stepArrows(scene: Scene, step: number): ArrowSpec[] {
-  const frame = step >= 1 ? scene.frames?.[step - 1] : undefined;
-  if (!frame) return [];
-  const from = resolveStep(scene, step - 1);
-  const byId = new Map(scene.objects.map((o) => [o.id, o]));
-  const carriers = new Set(Object.values(frame.moves).flatMap((m) => (m.attach ? [m.attach] : [])));
-  return Object.entries(frame.moves).flatMap(([id, move]): ArrowSpec[] => {
-    const obj = byId.get(id);
-    const start = from.get(id);
-    if (!obj || !start || move.attach) return [];
-    if (Math.hypot(move.x - start.x, move.y - start.y) < 0.5) return [];
-    if (obj.type === "player" && carriers.has(id)) {
-      const curved = move.cx !== undefined && move.cy !== undefined;
-      const points = sampleLine({
-        points: [0, 0, (curved ? move.cx! : (start.x + move.x) / 2) - start.x, (curved ? move.cy! : (start.y + move.y) / 2) - start.y, move.x - start.x, move.y - start.y],
-        curved,
-        wavy: true,
-      }).map((v, i) => v + (i % 2 === 0 ? start.x : start.y));
-      return [{ points, dashed: false }];
-    }
-    return [{ points: movePath(start, move), dashed: obj.type !== "ball" }];
-  });
+/** Cadre d'une image : zone utilisée (recadrée) ou cadrage du terrain choisi dans l'éditeur. */
+export function frameRect(scene: Scene, framing: Framing): Box {
+  return framing === "crop" ? diagramRect(scene) : viewRect(scene.pitch);
 }
 
-function SnapshotStage({
-  scene,
-  step,
-  width,
-  onReady,
-}: {
+/** Taille en pixels (avant suréchantillonnage) d'une image du tableau à la largeur donnée. */
+export function frameSize(rect: Box, width: number) {
+  const scale = width / (rect.w + PAD * 2);
+  return { width, height: Math.round((rect.h + PAD * 2) * scale), scale };
+}
+
+interface StageProps {
   scene: Scene;
-  step: number;
+  objects: SceneObject[];
+  arrows: ArrowSpec[];
+  rect: Box;
   width: number;
   onReady: (stage: Konva.Stage) => void;
-}) {
+}
+
+function SnapshotStage({ scene, objects, arrows, rect, width, onReady }: StageProps) {
   const ref = useRef<Konva.Stage>(null);
-  const rect = diagramRect(scene);
-  const scale = width / (rect.w + PAD * 2);
-  const height = Math.round((rect.h + PAD * 2) * scale);
-  const poses = step >= 1 ? resolveStep(scene, step - 1) : null;
-  const objects: SceneObject[] = poses
-    ? scene.objects.map((o) => {
-        const p = poses.get(o.id);
-        return p ? { ...o, x: p.x, y: p.y, rotation: p.rotation } : o;
-      })
-    : scene.objects;
+  const { height, scale } = frameSize(rect, width);
   const teams = new Map(scene.teams.map((t) => [t.id, t]));
   const photos = usePhotos.getState().images;
-  const arrows = stepArrows(scene, step);
 
   useEffect(() => {
     // Deux images d'affichage : le temps que Konva ait dessiné tous les calques.
@@ -174,7 +151,7 @@ function SnapshotStage({
           />
         ))}
       </Layer>
-      <Layer listening={false}>
+      <Layer listening={false} name="objects">
         {objects.map((obj) => (
           <ObjectNode
             key={obj.id}
@@ -191,17 +168,23 @@ function SnapshotStage({
   );
 }
 
-/** Image JPEG d'un tableau, à la largeur demandée (en pixels, avant suréchantillonnage ×2). */
-export async function renderDiagram(scene: Scene, step: number, width = 900): Promise<string> {
-  // Les photos des joueurs doivent être chargées avant le rendu hors écran.
+/**
+ * Monte un tableau hors écran et rend la scène Konva une fois dessinée. `dispose` le démonte.
+ * Les photos des joueurs sont chargées avant le montage.
+ */
+export async function mountStage(
+  scene: Scene,
+  options: { step?: number; rect: Box; width: number; arrows?: boolean },
+): Promise<{ stage: Konva.Stage; dispose: () => void }> {
   await ensurePhotos(scene.objects.flatMap((o) => (o.type === "player" && o.photo ? [o.photo] : [])));
-  return new Promise((resolve, reject) => {
+  const step = options.step ?? 0;
+  return new Promise((resolve) => {
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");
     host.style.cssText = "position:fixed;left:-20000px;top:0;pointer-events:none;";
     document.body.appendChild(host);
     const root = createRoot(host);
-    const cleanup = () =>
+    const dispose = () =>
       setTimeout(() => {
         root.unmount();
         host.remove();
@@ -209,43 +192,27 @@ export async function renderDiagram(scene: Scene, step: number, width = 900): Pr
     root.render(
       <SnapshotStage
         scene={scene}
-        step={step}
-        width={width}
-        onReady={(stage) => {
-          try {
-            resolve(stage.toDataURL({ pixelRatio: 2, mimeType: "image/jpeg", quality: 0.9 }));
-          } catch (error) {
-            reject(error);
-          } finally {
-            cleanup();
-          }
-        }}
+        objects={objectsAtStep(scene, step)}
+        arrows={options.arrows === false ? [] : stepArrows(scene, step)}
+        rect={options.rect}
+        width={options.width}
+        onReady={(stage) => resolve({ stage, dispose })}
       />,
     );
   });
 }
 
-// --- Icônes de légende -------------------------------------------------------
-
-function primSvg(p: Prim): string {
-  const attrs = [
-    `fill="${p.fill ?? "none"}"`,
-    p.stroke ? `stroke="${p.stroke}"` : "",
-    p.sw ? `stroke-width="${p.sw}"` : "",
-    p.o !== undefined ? `opacity="${p.o}"` : "",
-    `stroke-linecap="round" stroke-linejoin="round"`,
-  ].join(" ");
-  switch (p.t) {
-    case "circle":
-      return `<circle cx="${p.x}" cy="${p.y}" r="${p.r}" ${attrs}/>`;
-    case "ellipse":
-      return `<ellipse cx="${p.x}" cy="${p.y}" rx="${p.rx}" ry="${p.ry}" ${attrs}/>`;
-    case "rect":
-      return `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${p.r ?? 0}" ${attrs}/>`;
-    case "line":
-      return `<${p.closed ? "polygon" : "polyline"} points="${p.pts.join(" ")}" ${attrs}/>`;
+/** Image JPEG d'un tableau, à la largeur demandée (en pixels, avant suréchantillonnage ×2). */
+export async function renderDiagram(scene: Scene, step: number, width = 900): Promise<string> {
+  const { stage, dispose } = await mountStage(scene, { step, rect: diagramRect(scene), width });
+  try {
+    return stage.toDataURL({ pixelRatio: 2, mimeType: "image/jpeg", quality: 0.9 });
+  } finally {
+    dispose();
   }
 }
+
+// --- Icônes de légende -------------------------------------------------------
 
 /** Icône PNG d'un objet de la banque, sur fond vert, pour la légende « Matériel ». */
 export function iconPng(item: CatalogItem, size = 96): Promise<string> {

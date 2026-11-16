@@ -327,6 +327,48 @@
       "attachNone": "Nobody (free ball)",
       "clearMove": "Remove this movement",
       "moveHint": "Move the object to set where it ends the step. The orange handle in the middle of the path bends it; double-tap it to straighten."
+    },
+    "export": {
+      "open": "Export",
+      "title": "Export the board",
+      "close": "Close",
+      "format": "Format",
+      "formats": {
+        "png": "PNG image",
+        "svg": "SVG image",
+        "gif": "GIF animation",
+        "video": "Video"
+      },
+      "hints": {
+        "png": "For a message or a document",
+        "svg": "Vector, sharp at any size",
+        "gif": "Looping animation",
+        "video": "MP4 for social media and slides"
+      },
+      "noAnimation": "Add animation steps to export a GIF or a video.",
+      "framing": "Framing",
+      "framings": {
+        "view": "Displayed pitch",
+        "crop": "Used area"
+      },
+      "quality": "Quality",
+      "qualities": {
+        "standard": "Standard",
+        "high": "High"
+      },
+      "pixels": "{width} px wide",
+      "vector": "Vector",
+      "stepNote": "Image of step {step}, with the arrows of its moves.",
+      "boardNote": "Image of the board as displayed.",
+      "animationNote": "The whole animation, start to finish.",
+      "stepSuffix": "step {step}",
+      "progress": "Export progress",
+      "submit": "Export",
+      "working": "Exporting…",
+      "cancel": "Cancel",
+      "done": "File downloaded: {name}",
+      "failed": "The export failed. Please try again.",
+      "videoUnsupported": "This browser cannot create videos. Try GIF, or a recent browser (Chrome, Edge, Safari)."
     }
   },
   "dash": {
