@@ -17,7 +17,7 @@ npm run dev
 | `npm run lint` | ESLint |
 | `npm run typecheck` | types de routes + TypeScript |
 | `npm test` | tests unitaires (Vitest) |
-| `npm run build && npm run e2e` | parcours Playwright |
+| `npm run build:e2e && npm run e2e` | parcours Playwright, contre un faux Supabase local |
 
 Documentation : [architecture](docs/ARCHITECTURE.md), [système de design](docs/DESIGN_SYSTEM.md),
 [format de scène](docs/SCENE_FORMAT.md).

@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Valeurs factices : la CI ne parle jamais à la vraie base.
+  # La CI ne parle jamais à la vraie base : les parcours utilisent e2e/fake-supabase.mjs.
   NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
 

@@ -17,10 +17,21 @@ export default defineConfig({
     { name: "ordinateur", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: {
-    command: `npm run start -- --port ${port}`,
-    url: `http://127.0.0.1:${port}/fr`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-  },
+  // Les parcours tournent contre un faux Supabase local : l'application doit avoir été
+  // construite avec `npm run build:e2e` pour pointer dessus.
+  webServer: [
+    {
+      command: "node e2e/fake-supabase.mjs",
+      url: "http://127.0.0.1:54321/auth/v1/user",
+      ignoreHTTPSErrors: true,
+      reuseExistingServer: !process.env.CI,
+      timeout: 20_000,
+    },
+    {
+      command: `npm run start -- --port ${port}`,
+      url: `http://127.0.0.1:${port}/fr`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+  ],
 });
