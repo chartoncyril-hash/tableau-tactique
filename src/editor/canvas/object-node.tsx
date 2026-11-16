@@ -358,7 +358,7 @@ export const ObjectNode = memo(function ObjectNode({ obj, team, ink, draggable, 
   return (
     <Group
       id={obj.id}
-      name="object"
+      name={`object ${obj.type}`}
       x={obj.x}
       y={obj.y}
       rotation={obj.rotation}

@@ -31,6 +31,7 @@ async function closePanel(page: Page) {
 }
 
 const count = (page: Page) => page.getByTestId("object-count");
+const boardTabs = (page: Page) => page.getByRole("navigation", { name: "Tableaux" }).getByRole("tab");
 const saved = (page: Page) => expect(page.getByTestId("save-state")).toHaveAttribute("data-state", "saved");
 
 test("un projet est enregistré et repris après rechargement", async ({ page }, info) => {
@@ -73,7 +74,7 @@ test("plusieurs tableaux, notes et suppression d'un tableau", async ({ page }, i
   await saved(page);
 
   await page.reload();
-  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(boardTabs(page)).toHaveCount(2);
   await expect(count(page)).toHaveText("11 objets");
   await openPanel(page);
   await expect(page.getByLabel("Notes")).toHaveValue("Bloc médian, pressing au signal.");
@@ -81,7 +82,7 @@ test("plusieurs tableaux, notes et suppression d'un tableau", async ({ page }, i
 
   await page.getByRole("tab", { name: "Tableau 2" }).click();
   await page.getByRole("button", { name: "Supprimer le tableau" }).click();
-  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(boardTabs(page)).toHaveCount(1);
   await expect(count(page)).toHaveText("11 objets");
 });
 

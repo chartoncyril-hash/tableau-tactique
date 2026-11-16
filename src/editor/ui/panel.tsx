@@ -24,9 +24,11 @@ import { Button } from "@/components/ui/button";
 import { GRASS_PRESETS, LINE_STYLES } from "../scene/defaults";
 import { FORMATIONS, type FormationId } from "../scene/formations";
 import {
+  EASINGS,
   LINE_KINDS,
   MAX_TEAMS,
   TEAM_PATTERNS,
+  type Easing,
   type LineKind,
   type MowStyle,
   type PitchView,
@@ -251,6 +253,92 @@ function SelectionSection({ objects }: { objects: SceneObject[] }) {
   );
 }
 
+/** Réglages du déplacement des objets sélectionnés dans l'étape affichée. */
+function MoveSection({ objects }: { objects: SceneObject[] }) {
+  const t = useTranslations("editor.anim");
+  const step = useEditor((s) => s.currentStep);
+  const frame = useEditor((s) => (s.currentStep >= 1 ? s.scene.frames?.[s.currentStep - 1] : undefined));
+  const players = useEditor((s) => s.scene.objects).filter((o) => o.type === "player");
+  const teams = useEditor((s) => s.scene.teams);
+  if (!frame) return null;
+
+  const s = useEditor.getState();
+  const first = objects[0];
+  const move = frame.moves[first.id];
+  const ball = objects.length === 1 && first.type === "ball";
+  const percent = (value: number) => `${Math.round(value * 100)} %`;
+
+  return (
+    <Section title={t("moveTitle", { n: step })}>
+      <Field label={`${t("delay")} ${percent(move?.delay ?? 0)}`}>
+        <Range
+          aria-label={t("delay")}
+          min={0}
+          max={0.8}
+          step={0.05}
+          value={move?.delay ?? 0}
+          onChange={(e) => s.updateMoves({ delay: Number(e.target.value) }, "move:delay")}
+        />
+      </Field>
+      <Field label={`${t("span")} ${percent(move?.span ?? 1)}`}>
+        <Range
+          aria-label={t("span")}
+          min={0.2}
+          max={1}
+          step={0.05}
+          value={move?.span ?? 1}
+          onChange={(e) => s.updateMoves({ span: Number(e.target.value) }, "move:span")}
+        />
+      </Field>
+      <Field label={t("ease")}>
+        <Select
+          value={move?.ease ?? "inOut"}
+          onChange={(e) => s.updateMoves({ ease: e.target.value as Easing })}
+        >
+          {EASINGS.map((ease) => (
+            <option key={ease} value={ease}>
+              {t(`eases.${ease}`)}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      {ball && (
+        <>
+          <Field label={`${t("arc")} ${(move?.arc ?? 0).toFixed(0)} m`}>
+            <Range
+              aria-label={t("arc")}
+              min={0}
+              max={15}
+              step={1}
+              value={move?.arc ?? 0}
+              onChange={(e) => s.updateMoves({ arc: Number(e.target.value) || undefined }, "move:arc")}
+            />
+          </Field>
+          <Field label={t("attach")}>
+            <Select
+              value={move?.attach ?? ""}
+              onChange={(e) => s.updateMoves({ attach: e.target.value || undefined })}
+            >
+              <option value="">{t("attachNone")}</option>
+              {players.map((p) =>
+                p.type === "player" ? (
+                  <option key={p.id} value={p.id}>
+                    {`${teams.find((team) => team.id === p.teamId)?.name ?? ""} ${p.number} ${p.name}`.trim()}
+                  </option>
+                ) : null,
+              )}
+            </Select>
+          </Field>
+        </>
+      )}
+      <Button variant="outline" size="sm" disabled={!objects.some((o) => frame.moves[o.id])} onClick={s.clearMoves}>
+        {t("clearMove")}
+      </Button>
+      <p className="text-xs text-muted-foreground">{t("moveHint")}</p>
+    </Section>
+  );
+}
+
 export function Panel() {
   const t = useTranslations("editor.panel");
   const tEditor = useTranslations("editor");
@@ -271,6 +359,7 @@ export function Panel() {
   return (
     <div className="flex flex-col">
       {objects.length > 0 && <SelectionSection objects={objects} />}
+      {objects.length > 0 && <MoveSection objects={objects} />}
 
       {online && <ProjectSections />}
 

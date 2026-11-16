@@ -297,6 +297,36 @@
       "errorTitle": "Chargement impossible",
       "errorBody": "Vérifiez votre connexion puis réessayez.",
       "backToProjects": "Retour aux projets"
+    },
+    "anim": {
+      "play": "Lire l'animation",
+      "pause": "Mettre en pause",
+      "stop": "Arrêter la lecture",
+      "steps": "Étapes de l'animation",
+      "start": "Départ",
+      "step": "Étape {n}",
+      "addStep": "Ajouter une étape",
+      "removeStep": "Supprimer cette étape",
+      "duration": "Durée",
+      "loop": "Lire en boucle",
+      "traces": "Afficher les trajectoires",
+      "speed": "Vitesse de lecture",
+      "scrub": "Position dans l'animation",
+      "moveTitle": "Déplacement, étape {n}",
+      "delay": "Départ différé",
+      "span": "Durée du déplacement",
+      "ease": "Allure",
+      "eases": {
+        "inOut": "Accélère puis ralentit",
+        "linear": "Constante",
+        "in": "Accélère",
+        "out": "Ralentit"
+      },
+      "arc": "Hauteur de la cloche",
+      "attach": "Conduit par",
+      "attachNone": "Personne (ballon libre)",
+      "clearMove": "Supprimer ce déplacement",
+      "moveHint": "Déplacez l'objet pour fixer sa position à la fin de l'étape. La poignée orange au milieu de la trajectoire la courbe ; deux touches dessus la redressent."
     }
   },
   "dash": {

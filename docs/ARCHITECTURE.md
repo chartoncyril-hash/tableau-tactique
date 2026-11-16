@@ -1,6 +1,6 @@
 # Architecture
 
-État à la fin de la phase 3 (persistance). Mis à jour à chaque phase.
+État à la fin de la phase 4 (animation). Mis à jour à chaque phase.
 
 ## Pile technique
 
@@ -47,6 +47,10 @@ ui/         barre d'outils, barre du haut, panneau de propriétés
 - **Performance** : pendant un glisser, les nœuds Konva sont déplacés directement, React n'est
   sollicité qu'au relâchement. Chaque objet est un composant mémoïsé. Le calque du terrain
   n'écoute aucun événement.
+- **Animation** : l'étape affichée (`currentStep`) sert de filtre d'édition. Une modification
+  voit les objets à leur position dans cette étape ; tout changement de position est rangé
+  dans l'étape, jamais dans les positions de départ (`produceAtStep`). La lecture
+  (`animation/playback.ts`) pousse les poses directement dans les nœuds Konva à chaque image.
 - **Chargement** : Konva est importé dynamiquement, hors rendu serveur (`editor-loader.tsx`).
 
 ## Règles propres à Next.js 16

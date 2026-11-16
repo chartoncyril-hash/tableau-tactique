@@ -1,5 +1,14 @@
 # Journal des modifications
 
+## Phase 4 — Animation
+
+- Étapes d'animation (images clés) par tableau : on ajoute une étape, on déplace les objets, c'est enregistré.
+- Lecture, pause, arrêt, boucle, vitesse de 0,5× à 2×, curseur de position.
+- Trajectoires affichées en pointillés, courbables par une poignée.
+- Par déplacement : départ différé, durée, allure (accélération, ralentissement).
+- Ballon : cloche avec hauteur réglable, ou conduit par un joueur.
+- Durée réglable par étape ; les étapes s'annulent et se rétablissent comme le reste.
+
 ## Phase 3 — Persistance
 
 - Projets enregistrés en ligne, repris sur n'importe quel appareil.
