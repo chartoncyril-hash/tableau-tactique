@@ -4,12 +4,13 @@
 // Ne sert qu'aux tests.
 import { createHash, randomUUID } from "node:crypto";
 import { createServer } from "node:http";
+import { WebSocketServer } from "ws";
 
 const PORT = 54321;
 const PASSWORD = "motdepasse-test";
 const tables = {
   folders: [], projects: [], boards: [], board_versions: [], shares: [], teams: [], players: [],
-  clubs: [], club_members: [], club_invites: [],
+  clubs: [], club_members: [], club_invites: [], board_comments: [],
 };
 /** Utilisateurs connus (pour la liste des membres d'un club). */
 const users = new Map();
@@ -23,6 +24,7 @@ const defaults = {
   shares: () => ({ token: randomUUID().replaceAll("-", ""), revoked_at: null }),
   teams: () => ({ club: "", club_id: null, category: "", kit: {} }),
   players: () => ({ first_name: "", last_name: "", number: "", position: "", foot: "", notes: "", photo_path: null }),
+  board_comments: () => ({ parent_id: null, x: null, y: null, resolved_at: null, resolved_by: null, author_name: "" }),
   club_invites: () => ({
     role: "coach", label: "", token: randomUUID().replaceAll("-", ""),
     expires_at: new Date(Date.now() + 14 * 86_400_000).toISOString(), accepted_at: null, accepted_by: null, revoked_at: null,
@@ -45,6 +47,7 @@ function readable(table, row, uid) {
     case "clubs": return roleOf(row.id, uid) !== null;
     case "club_members": return roleOf(row.club_id, uid) !== null;
     case "club_invites": return roleOf(row.club_id, uid) === "admin";
+    case "board_comments": { const b = byId("boards", row.board_id); return !!b && readable("boards", b, uid); }
   }
   return false;
 }
@@ -56,6 +59,11 @@ function editable(table, row, uid) {
     case "players": { const t = byId("teams", row.team_id); return !!t && canEdit(t.club_id, t.owner_id, uid); }
     case "clubs": case "club_invites": return roleOf(row.club_id ?? row.id, uid) === "admin";
     case "club_members": return roleOf(row.club_id, uid) === "admin";
+    case "board_comments": {
+      if (row.author_id === uid) return true;
+      const b = byId("boards", row.board_id);
+      return !!b && editable("boards", b, uid);
+    }
   }
   return false;
 }
@@ -161,7 +169,15 @@ function insert(table, body, owner, { check = true } = {}) {
   if (check) {
     // Comme la RLS : pas d'insertion directe dans clubs / club_members, et droit de modifier l'espace visé.
     if (table === "clubs" || table === "club_members") throw denied();
-    if (!editable(table, row, owner)) throw denied();
+    if (table === "board_comments") {
+      // Quiconque voit le tableau commente, en son nom ; une réponse vise un fil du même tableau.
+      if (row.author_id !== owner || !readable(table, row, owner)) throw denied();
+      if (row.parent_id) {
+        const parent = byId("board_comments", row.parent_id);
+        if (!parent || parent.board_id !== row.board_id || parent.parent_id) throw denied();
+      }
+      Object.assign(row, { author_name: (users.get(owner) ?? "").split("@")[0], resolved_at: null, resolved_by: null });
+    } else if (!editable(table, row, owner)) throw denied();
     if (table === "club_invites" && row.invited_by !== owner) throw denied();
     if (table === "players") checkPhoto(row, owner);
     if (table === "projects" && row.folder_id && byId("folders", row.folder_id)?.club_id !== row.club_id) throw denied();
@@ -421,6 +437,11 @@ const server = createServer(async (req, res) => {
           // La nouvelle version doit rester modifiable (WITH CHECK).
           if (!editable(table, next, owner)) throw denied();
           if (table === "club_members") keepAdmin(row, next.role);
+          if (table === "board_comments") {
+            for (const k of ["board_id", "parent_id", "author_id", "author_name"]) delete patch[k];
+            if ("body" in patch && patch.body !== row.body && row.author_id !== owner) throw denied();
+            if ("resolved_at" in patch) patch.resolved_by = patch.resolved_at ? owner : null;
+          }
           if (table === "players" && next.photo_path !== row.photo_path) checkPhoto(next, owner);
           if (table === "projects" && next.folder_id && byId("folders", next.folder_id)?.club_id !== next.club_id) throw denied();
           Object.assign(row, patch, { updated_at: stamp() });
@@ -448,6 +469,126 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     send(400, { message: String(error?.message ?? error) });
   }
+});
+
+// --- Temps réel : sous-ensemble du protocole Phoenix utilisé par realtime-js (vsn 2.0.0) -------
+// Canaux privés `project:<id>` : entrée pour qui peut lire le projet ; diffusion des changements
+// pour qui peut le modifier (pointeur et commentaires pour tous), comme les politiques de la base.
+const sockets = new WebSocketServer({ noServer: true });
+/** Abonnés par sujet : { ws, joinRef, uid, key, meta }. */
+const topics = new Map();
+const tokenUser = (token) => {
+  try {
+    return JSON.parse(Buffer.from(String(token).split(".")[1], "base64url").toString()).email;
+  } catch {
+    return null;
+  }
+};
+const projectOf = (topic) => byId("projects", topic.replace(/^realtime:project:/, ""));
+const OPEN_EVENTS = new Set(["cursor", "cursor-out", "comments"]);
+
+function decodeBinaryPush(buf) {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  if (view.getUint8(0) !== 3) return null;
+  const sizes = [1, 2, 3, 4, 5].map((i) => view.getUint8(i));
+  const encoding = view.getUint8(6);
+  let offset = 7;
+  const take = (n) => {
+    const out = buf.subarray(offset, offset + n).toString("utf8");
+    offset += n;
+    return out;
+  };
+  const [joinRef, ref, topic, event] = [take(sizes[0]), take(sizes[1]), take(sizes[2]), take(sizes[3])];
+  take(sizes[4]);
+  const raw = buf.subarray(offset);
+  const payload = encoding === 1 ? JSON.parse(raw.toString("utf8")) : null;
+  return { joinRef, ref, topic, event, payload };
+}
+
+sockets.on("connection", (ws) => {
+  const out = (msg) => ws.readyState === 1 && ws.send(JSON.stringify(msg));
+  const subs = new Map();
+  const leave = (topic) => {
+    const sub = subs.get(topic);
+    if (!sub) return;
+    subs.delete(topic);
+    const list = (topics.get(topic) ?? []).filter((s) => s !== sub);
+    topics.set(topic, list);
+    if (sub.meta) {
+      for (const other of list) other.out([null, null, topic, "presence_diff", { joins: {}, leaves: { [sub.key]: { metas: [sub.meta] } } }]);
+    }
+  };
+  const forward = (topic, event, payload, from) => {
+    for (const sub of topics.get(topic) ?? []) {
+      if (sub === from) continue;
+      sub.out([null, null, topic, "broadcast", { type: "broadcast", event, payload }]);
+    }
+  };
+  ws.on("message", (data, isBinary) => {
+    try {
+      if (isBinary) {
+        const push = decodeBinaryPush(Buffer.from(data));
+        const sub = push && subs.get(push.topic);
+        if (!sub) return;
+        const project = projectOf(push.topic);
+        const allowed = project && (OPEN_EVENTS.has(push.event) || editable("projects", project, sub.uid));
+        if (allowed) forward(push.topic, push.event, push.payload, sub);
+        return;
+      }
+      const [joinRef, ref, topic, event, payload] = JSON.parse(data.toString());
+      const reply = (status, response = {}) => out([joinRef, ref, topic, "phx_reply", { status, response }]);
+      if (topic === "phoenix") return reply("ok");
+      if (event === "phx_join") {
+        const email = tokenUser(payload?.access_token);
+        const uid = email ? userFor(email).id : null;
+        const project = projectOf(topic);
+        if (!uid || !project || !readable("projects", project, uid)) return reply("error", { reason: "Unauthorized" });
+        const sub = { out, joinRef, uid, key: payload?.config?.presence?.key || randomUUID(), meta: null };
+        subs.set(topic, sub);
+        topics.set(topic, [...(topics.get(topic) ?? []), sub]);
+        reply("ok", { postgres_changes: [] });
+        const state = Object.fromEntries((topics.get(topic) ?? []).filter((s) => s.meta).map((s) => [s.key, { metas: [s.meta] }]));
+        out([null, null, topic, "presence_state", state]);
+        return;
+      }
+      const sub = subs.get(topic);
+      if (event === "phx_leave") {
+        leave(topic);
+        return reply("ok");
+      }
+      if (!sub) return reply("error", { reason: "not joined" });
+      if (event === "access_token") return reply("ok");
+      if (event === "presence" && payload?.event === "track") {
+        const previous = sub.meta;
+        sub.meta = { ...payload.payload, phx_ref: randomUUID() };
+        const diff = { joins: { [sub.key]: { metas: [sub.meta] } }, leaves: previous ? { [sub.key]: { metas: [previous] } } : {} };
+        for (const other of topics.get(topic) ?? []) other.out([null, null, topic, "presence_diff", diff]);
+        return reply("ok");
+      }
+      if (event === "presence" && payload?.event === "untrack") {
+        const previous = sub.meta;
+        sub.meta = null;
+        if (previous) for (const other of topics.get(topic) ?? []) other.out([null, null, topic, "presence_diff", { joins: {}, leaves: { [sub.key]: { metas: [previous] } } }]);
+        return reply("ok");
+      }
+      if (event === "broadcast") {
+        const project = projectOf(topic);
+        if (project && (OPEN_EVENTS.has(payload?.event) || editable("projects", project, sub.uid))) forward(topic, payload.event, payload.payload, sub);
+        return reply("ok");
+      }
+      reply("ok");
+    } catch (error) {
+      console.error("realtime", error);
+    }
+  });
+  ws.on("close", () => {
+    for (const topic of [...subs.keys()]) leave(topic);
+  });
+});
+
+server.on("upgrade", (req, socket, head) => {
+  if (!req.url?.startsWith("/realtime/v1/websocket")) return socket.destroy();
+  sockets.handleUpgrade(req, socket, head, (ws) => sockets.emit("connection", ws, req));
 });
 
 server.listen(PORT, "127.0.0.1", () => console.log(`faux Supabase sur http://127.0.0.1:${PORT}`));

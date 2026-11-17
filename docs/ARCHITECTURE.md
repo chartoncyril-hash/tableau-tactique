@@ -173,6 +173,21 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 - Limite connue : supprimer un compte supprime aussi les contenus de club qu'il a créés
   (clé `owner_id` en cascade). À traiter avant d'ouvrir les clubs à grande échelle.
 
+## Édition à plusieurs et commentaires (phase 9b)
+
+- `src/editor/collab/patch.ts` (testé) : différence objet par objet entre deux scènes, application
+  et fusion. `useEditor.applyRemote(patch)` applique un changement reçu à la scène **et** à tout
+  l'historique : Ctrl+Z ne défait que ses propres actions.
+- `collab/session.ts` : canal Supabase Realtime privé `project:<id>` ; présence (qui, quel tableau),
+  événements `patch`, `cursor`, `hello`/`full` (rattrapage d'un arrivant), `boards`, `comments`.
+  Un changement reçu n'est pas réenregistré par le receveur (`applyingRemote`), son auteur s'en charge.
+- Politiques sur `realtime.messages` : lecture si le projet est lisible ; écriture de présence,
+  pointeur et commentaires pour les lecteurs, des autres événements pour qui peut modifier.
+- `board_comments` : fil = commentaire sans `parent_id` (épingle `x`/`y` facultative), réponses.
+  Déclencheur `board_comments_guard` : nom de l'auteur figé, seul l'auteur réécrit son texte.
+- E2E : le faux Supabase implémente le sous-ensemble du protocole Phoenix utilisé par realtime-js
+  (WebSocket, poussées binaires, présence) avec les mêmes règles d'accès.
+
 ## Tests de bout en bout
 
 Les parcours Playwright tournent contre `e2e/fake-supabase.mjs`, un faux Supabase en mémoire

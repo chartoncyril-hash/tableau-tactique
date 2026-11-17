@@ -20,6 +20,10 @@ import { playbackTarget, restingPoses, usePlayback } from "../animation/playback
 import { movePath, resolveStep } from "../scene/animation";
 import { displayObjects, lineDefaults, useEditor, type Tool } from "../store";
 import { blockLines, voronoiCells } from "../scene/analysis";
+import { shareCursor } from "../collab/session";
+import { RemoteCursors } from "../collab/remote-cursors";
+import { CommentPins } from "../collab/comment-pins";
+import { useComments } from "../collab/comments";
 import { keepUpright, ObjectNode, type NodeHandlers } from "./object-node";
 import { PitchLayer } from "./pitch-layer";
 
@@ -290,6 +294,10 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
     const st = useEditor.getState();
 
     switch (tool.type) {
+      case "comment":
+        useComments.setState({ draftPin: { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 } });
+        st.setTool({ type: "select" });
+        break;
       case "select":
         if (e.target === stage) {
           if (!evt.shiftKey) st.select([]);
@@ -367,6 +375,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
   const onPointerMove = (e: KonvaEventObject<PointerEvent>) => {
     const g = gesture.current;
     const d = draftRef.current;
+    if (e.evt.pointerType === "mouse") shareCursor(world());
     if (pinch.current) return;
     if (g?.kind === "pan") {
       userMoved.current = true;
@@ -842,6 +851,7 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
           y={cam.y}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
+          onPointerLeave={() => shareCursor(null)}
           onWheel={onWheel}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -866,6 +876,8 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
             {nodes}
           </Layer>
           <Layer ref={overlayRef}>
+            <CommentPins px={px} />
+            <RemoteCursors px={px} />
             {blocks.map((team) => (
               <BlockLines key={team.id} team={team} ink={scene.pitch.lines} />
             ))}

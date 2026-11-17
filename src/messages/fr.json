@@ -398,7 +398,39 @@
       },
       "help": "Faites glisser un joueur, un ballon ou du matériel pour le déplacer. Glissez sur le terrain pour tourner, pincez ou molette pour zoomer. Les tracés et zones se modifient en 2D."
     },
-    "readOnly": "Lecture seule : vous êtes lecteur dans ce club. Vous pouvez présenter, lire l'animation, passer en 3D et exporter."
+    "readOnly": "Lecture seule : vous êtes lecteur dans ce club. Vous pouvez présenter, lire l'animation, passer en 3D et exporter.",
+    "collab": {
+      "present": "{count, plural, =0 {Personne d'autre sur ce projet} one {# autre personne sur ce projet} other {# autres personnes sur ce projet}}",
+      "here": "{name} est sur ce tableau",
+      "elsewhere": "{name} est sur « {board} »",
+      "offline": "Hors ligne"
+    },
+    "comments": {
+      "open": "Commentaires",
+      "title": "Commentaires du tableau",
+      "close": "Fermer les commentaires",
+      "newField": "Nouveau commentaire",
+      "newPlaceholder": "Une remarque, une question, une consigne…",
+      "pin": "Épingler sur le tableau",
+      "pinHint": "Cliquez sur le tableau…",
+      "pinned": "Épinglé sur le tableau (retirer)",
+      "post": "Publier",
+      "error": "Envoi impossible. Réessayez.",
+      "loadError": "Commentaires indisponibles pour le moment.",
+      "loading": "Chargement…",
+      "empty": "Aucun commentaire sur ce tableau.",
+      "resolved": "{count, plural, one {# fil résolu} other {# fils résolus}}",
+      "thread": "Fil de {author}",
+      "someone": "Quelqu'un",
+      "reply": "Répondre",
+      "replyField": "Votre réponse",
+      "send": "Envoyer",
+      "cancel": "Annuler",
+      "resolve": "Résoudre",
+      "reopen": "Rouvrir",
+      "delete": "Supprimer",
+      "notLive": "Hors connexion en direct : les nouveaux commentaires des autres apparaîtront au rechargement."
+    }
   },
   "dash": {
     "title": "Mes projets",

@@ -1,5 +1,18 @@
 # Journal des modifications
 
+## Phase 9b — Édition à plusieurs et commentaires
+
+- Temps réel : deux entraîneurs (ou plus) sur le même projet voient les modifications de l'autre
+  en direct, objet par objet ; des modifications simultanées d'objets différents se cumulent.
+  Annuler (Ctrl+Z) ne défait que ses propres modifications.
+- Présence : pastilles des personnes connectées (pleine = sur le même tableau), pointeurs des
+  autres sur le tableau avec leur nom ; un arrivant reçoit l'état le plus récent.
+- Ajout, renommage, réordonnancement et suppression de tableaux répercutés chez les autres.
+- Commentaires par tableau : fils épinglés sur le terrain (numérotés) ou généraux, réponses,
+  résoudre / rouvrir, suppression ; mis à jour en direct. Les lecteurs d'un club peuvent commenter.
+- Sécurité : canal temps réel privé par projet (lecture pour qui voit le projet, changements
+  seulement pour qui peut le modifier), commentaires protégés par la RLS.
+
 ## Améliorations de la vue 3D
 
 - Zones d'influence et lignes de bloc (avec les écarts entre lignes) affichées au sol en 3D,

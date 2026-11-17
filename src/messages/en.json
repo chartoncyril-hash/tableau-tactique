@@ -398,7 +398,39 @@
       },
       "help": "Drag a player, ball or equipment to move it. Drag the pitch to orbit, pinch or scroll to zoom. Lines and zones are edited in 2D."
     },
-    "readOnly": "Read-only: you are a viewer in this club. You can present, play the animation, switch to 3D and export."
+    "readOnly": "Read-only: you are a viewer in this club. You can present, play the animation, switch to 3D and export.",
+    "collab": {
+      "present": "{count, plural, =0 {Nobody else on this project} one {# other person on this project} other {# other people on this project}}",
+      "here": "{name} is on this board",
+      "elsewhere": "{name} is on “{board}”",
+      "offline": "Offline"
+    },
+    "comments": {
+      "open": "Comments",
+      "title": "Board comments",
+      "close": "Close comments",
+      "newField": "New comment",
+      "newPlaceholder": "A remark, a question, an instruction…",
+      "pin": "Pin on the board",
+      "pinHint": "Click on the board…",
+      "pinned": "Pinned on the board (remove)",
+      "post": "Post",
+      "error": "Could not post. Please try again.",
+      "loadError": "Comments are unavailable right now.",
+      "loading": "Loading…",
+      "empty": "No comments on this board.",
+      "resolved": "{count, plural, one {# resolved thread} other {# resolved threads}}",
+      "thread": "Thread by {author}",
+      "someone": "Someone",
+      "reply": "Reply",
+      "replyField": "Your reply",
+      "send": "Send",
+      "cancel": "Cancel",
+      "resolve": "Resolve",
+      "reopen": "Reopen",
+      "delete": "Delete",
+      "notLive": "Not connected live: new comments from others will appear after reloading."
+    }
   },
   "dash": {
     "title": "My projects",
