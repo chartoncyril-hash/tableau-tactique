@@ -760,7 +760,8 @@
     "create": "Créer",
     "cancel": "Annuler",
     "close": "Fermer",
-    "error": "Création impossible. Réessayez."
+    "error": "Création impossible. Réessayez.",
+    "library": "Bibliothèque"
   },
   "club": {
     "title": "Club",
@@ -827,5 +828,72 @@
     "join": "Rejoindre {club}",
     "open": "Ouvrir le club",
     "error": "Impossible de rejoindre le club. Le lien n'est peut-être plus valable."
+  },
+  "library": {
+    "open": "Bibliothèque d'exercices",
+    "dialogTitle": "Bibliothèque d'exercices",
+    "close": "Fermer",
+    "tabInsert": "Insérer un exercice",
+    "tabSave": "Enregistrer ce tableau",
+    "saveHelp": "L'exercice garde le schéma (animation comprise), les consignes de la fiche et les notes. Il rejoint votre bibliothèque personnelle.",
+    "saveHelpClub": "L'exercice garde le schéma (animation comprise), les consignes de la fiche et les notes. Il rejoint la bibliothèque du club.",
+    "titleField": "Titre",
+    "category": "Catégorie",
+    "noCategory": "Sans catégorie",
+    "tags": "Étiquettes",
+    "tagsPlaceholder": "ex. pressing, U13, conservation",
+    "save": "Enregistrer dans la bibliothèque",
+    "error": "L'opération a échoué. Réessayez.",
+    "saved": "« {title} » est dans la bibliothèque.",
+    "inserted": "« {title} » ajouté comme nouveau tableau.",
+    "search": "Rechercher un exercice",
+    "loading": "Chargement…",
+    "empty": "Aucun exercice dans cette bibliothèque pour l'instant.",
+    "noResult": "Aucun exercice ne correspond.",
+    "insertDrill": "Insérer « {title} »",
+    "categories": {
+      "warmup": "Échauffement",
+      "technique": "Technique",
+      "tactics": "Tactique",
+      "game": "Jeu",
+      "finishing": "Finition",
+      "physical": "Athlétique",
+      "goalkeeper": "Gardien",
+      "setPieces": "Coups de pied arrêtés"
+    },
+    "pageTitle": "Bibliothèque",
+    "pageIntro": "Vos exercices réutilisables. Enregistrez un tableau depuis l'éditeur (bouton Bibliothèque).",
+    "pageIntroClub": "Les exercices partagés du club. Enregistrez un tableau depuis l'éditeur (bouton Bibliothèque).",
+    "all": "Tous",
+    "emptyPage": "Pas encore d'exercice. Dans l'éditeur, ouvrez la Bibliothèque puis « Enregistrer ce tableau ».",
+    "notes": "Notes",
+    "delete": "Supprimer",
+    "newProject": "Créer un projet avec cet exercice",
+    "newProjectMine": "Créer un projet dans mon espace",
+    "fields": {
+      "objective": "Objectif",
+      "goal": "But",
+      "instructions": "Consignes",
+      "duration": "Durée",
+      "players": "Joueurs",
+      "space": "Espace",
+      "variables": "Variables",
+      "method": "Méthode pédagogique",
+      "behaviours": "Comportements recherchés"
+    }
+  },
+  "present": {
+    "open": "Présenter",
+    "label": "Présentation",
+    "position": "{n} / {total}",
+    "previous": "Tableau précédent",
+    "next": "Tableau suivant",
+    "pen": "Dessiner (D)",
+    "color": "Couleur {color}",
+    "clear": "Effacer les dessins (X)",
+    "notes": "Consignes (N)",
+    "close": "Quitter la présentation",
+    "boardNotes": "Notes",
+    "help": "← → tableaux · Espace : lecture · ↑ ↓ étapes · D : dessiner · X : effacer · Échap : quitter"
   }
 }

@@ -188,6 +188,15 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 - E2E : le faux Supabase implémente le sous-ensemble du protocole Phoenix utilisé par realtime-js
   (WebSocket, poussées binaires, présence) avec les mêmes règles d'accès.
 
+## Bibliothèque et présentation (phase 9c)
+
+- Table `drills` (titre, catégorie, étiquettes, scène, consignes, notes), personnelle ou de club,
+  mêmes règles que les projets (`can_read` / `can_edit`, créateur figé, corbeille de 30 jours).
+- `src/lib/data/drills-api.ts`, page `app/library`, fenêtre `editor/ui/library-dialog.tsx` ;
+  un exercice inséré devient un tableau via `addBoardFromDrill`.
+- `editor/present/presenter.tsx` : plein écran, réutilise le lecteur de la page publique
+  (`BoardPlayer`, options `keyboard` et `overlay`) ; dessin sur un canevas HTML, jamais enregistré.
+
 ## Tests de bout en bout
 
 Les parcours Playwright tournent contre `e2e/fake-supabase.mjs`, un faux Supabase en mémoire

@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## Phase 9c — Bibliothèque d'exercices et mode présentation
+
+- Bibliothèque d'exercices, personnelle ou du club : depuis l'éditeur, « Enregistrer ce tableau »
+  (schéma et animation, consignes de la fiche, notes, catégorie, étiquettes) et « Insérer un
+  exercice » comme nouveau tableau du projet.
+- Onglet Bibliothèque : vignettes, catégories, recherche, aperçu animé avec les consignes,
+  « Créer un projet avec cet exercice ». Les lecteurs d'un club consultent et copient dans leur espace.
+- Mode présentation plein écran : un tableau à la fois en grand, ← → pour changer, Espace pour la
+  lecture, ↑ ↓ pour les étapes, dessin à main levée temporaire (4 couleurs), consignes à côté.
+  Réservé aux écrans larges, comme l'enregistrement dans la bibliothèque.
+
 ## Phase 9b — Édition à plusieurs et commentaires
 
 - Temps réel : deux entraîneurs (ou plus) sur le même projet voient les modifications de l'autre

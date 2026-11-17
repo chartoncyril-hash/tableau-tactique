@@ -760,7 +760,8 @@
     "create": "Create",
     "cancel": "Cancel",
     "close": "Close",
-    "error": "Could not create the club. Please try again."
+    "error": "Could not create the club. Please try again.",
+    "library": "Library"
   },
   "club": {
     "title": "Club",
@@ -827,5 +828,72 @@
     "join": "Join {club}",
     "open": "Open the club",
     "error": "Could not join the club. The link may no longer be valid."
+  },
+  "library": {
+    "open": "Drill library",
+    "dialogTitle": "Drill library",
+    "close": "Close",
+    "tabInsert": "Insert a drill",
+    "tabSave": "Save this board",
+    "saveHelp": "The drill keeps the diagram (animation included), the sheet instructions and the notes. It goes to your personal library.",
+    "saveHelpClub": "The drill keeps the diagram (animation included), the sheet instructions and the notes. It goes to the club library.",
+    "titleField": "Title",
+    "category": "Category",
+    "noCategory": "No category",
+    "tags": "Tags",
+    "tagsPlaceholder": "e.g. pressing, U13, possession",
+    "save": "Save to the library",
+    "error": "The operation failed. Please try again.",
+    "saved": "“{title}” is in the library.",
+    "inserted": "“{title}” added as a new board.",
+    "search": "Search drills",
+    "loading": "Loading…",
+    "empty": "No drills in this library yet.",
+    "noResult": "No drill matches.",
+    "insertDrill": "Insert “{title}”",
+    "categories": {
+      "warmup": "Warm-up",
+      "technique": "Technique",
+      "tactics": "Tactics",
+      "game": "Game",
+      "finishing": "Finishing",
+      "physical": "Fitness",
+      "goalkeeper": "Goalkeeper",
+      "setPieces": "Set pieces"
+    },
+    "pageTitle": "Library",
+    "pageIntro": "Your reusable drills. Save a board from the editor (Library button).",
+    "pageIntroClub": "The club's shared drills. Save a board from the editor (Library button).",
+    "all": "All",
+    "emptyPage": "No drills yet. In the editor, open the Library then “Save this board”.",
+    "notes": "Notes",
+    "delete": "Delete",
+    "newProject": "Create a project with this drill",
+    "newProjectMine": "Create a project in my space",
+    "fields": {
+      "objective": "Objective",
+      "goal": "Goal",
+      "instructions": "Instructions",
+      "duration": "Duration",
+      "players": "Players",
+      "space": "Space",
+      "variables": "Variables",
+      "method": "Teaching method",
+      "behaviours": "Expected behaviours"
+    }
+  },
+  "present": {
+    "open": "Present",
+    "label": "Presentation",
+    "position": "{n} / {total}",
+    "previous": "Previous board",
+    "next": "Next board",
+    "pen": "Draw (D)",
+    "color": "Colour {color}",
+    "clear": "Clear drawings (X)",
+    "notes": "Instructions (N)",
+    "close": "Exit presentation",
+    "boardNotes": "Notes",
+    "help": "← → boards · Space: play · ↑ ↓ steps · D: draw · X: clear · Esc: exit"
   }
 }
