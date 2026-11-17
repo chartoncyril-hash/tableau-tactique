@@ -1,5 +1,21 @@
 # Journal des modifications
 
+## Stade 3D, formats de jeu et corrections de la vue 3D
+
+- Ballon dans les pieds : un ballon collé à un joueur sur le tableau 2D est placé dans ses pieds en
+  3D (pastille de 3,2 m en 2D contre joueur mince en relief), y compris pendant la lecture.
+- Trajectoires en 3D quand « Afficher les trajectoires » est activé : pointillés et flèche, courbe
+  en l'air pour un ballon en cloche avec son ombre au sol.
+- Plein écran de la zone de travail (tableau 2D ou 3D et barre d'animation), avec la bascule 2D / 3D ;
+  la présentation a un mode 3D (bouton ou touche V), choisi d'office si on l'ouvre depuis la 3D.
+- Stade réaliste : tribunes avec public, toits, pylônes d'éclairage, panneaux publicitaires et
+  bandeaux au nom et au logo du club, ciel ; décor « Pelouse seule » au choix. Buts en relief
+  (montants, barre, filets) aux dimensions du format.
+- Logo du club téléversé dans les réglages du club ou depuis la vue 3D (administrateurs) ; logo
+  personnel pour l'espace personnel. Réduit à 512 px, rangé avec les photos de l'espace.
+- Catégories U6-U7 à vétérans et formats de jeu : foot à 5 (40 × 30 m), à 8 (65 × 50 m), à 11, avec
+  les tracés FFF et des systèmes de jeu adaptés ; changer de format met le schéma à l'échelle.
+
 ## Phase 9c — Bibliothèque d'exercices et mode présentation
 
 - Bibliothèque d'exercices, personnelle ou du club : depuis l'éditeur, « Enregistrer ce tableau »

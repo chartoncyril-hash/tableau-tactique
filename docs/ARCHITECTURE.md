@@ -155,7 +155,22 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
   taille réelle.
 - La lecture diffuse les poses à tous les abonnés (`playbackTarget.listen`) : le canevas 2D, qui
   reste monté sous la vue 3D, et la vue 3D elle-même.
+- `stadium.tsx` : stade procédural (tribunes fusionnées, public en `InstancedMesh`, panneaux et
+  bandeaux dessinés sur canevas avec le logo), buts en relief d'après les tracés du terrain. Une
+  tribune se masque quand la caméra passe derrière elle. Décor au choix (`useView3d.decor`).
+- `ballAtFeet` (`layout.ts`) rapproche un ballon collé à un joueur ; `Traces3D` reprend
+  `stepTraces` et `movePath3d` (`scene/animation.ts`), partagés avec le canevas 2D.
+- `View3dStage` sert dans l'éditeur et la présentation (`interactive` à faux) ; une seule vue 3D à
+  la fois (`useView3d.presenting`).
+- Logos : `clubs.logo_path` et `profiles.logo_path` (contrainte : le chemin reste dans le dossier
+  de l'espace), fichiers dans le bucket `player-photos` ; `src/lib/brand.ts` les charge et les signe.
 - E2E : Chromium est lancé avec SwiftShader (`playwright.config.ts`) pour disposer de WebGL en CI.
+
+## Formats de jeu
+
+- `src/editor/pitches/football-small.ts` : foot à 8 et à 5 ; `formats.ts` : catégories et format
+  par défaut. `scene/format.ts` (`rescaleToPitch`) met positions, tracés et déplacements à l'échelle
+  du nouveau terrain ; `formationsFor(sport)` donne les systèmes du format.
 
 ## Espaces club (phase 9a)
 

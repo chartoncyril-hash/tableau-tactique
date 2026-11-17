@@ -17,6 +17,7 @@ import { IconButton } from "./ui/controls";
 import { Panel } from "./ui/panel";
 import { Toolbar } from "./ui/toolbar";
 import { Timeline } from "./ui/timeline";
+import { STAGE_ID } from "./ui/fullscreen-button";
 import { TopBar } from "./ui/top-bar";
 import { View3dOverlay } from "./three/view-3d-overlay";
 import { startCollab, stopCollab } from "./collab/session";
@@ -213,7 +214,7 @@ export default function EditorApp({ projectId, boardId }: { projectId?: string; 
       {projectId && projectStatus === "ready" && <BoardTabs />}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {viewMode === "2d" && !readOnly && <Toolbar />}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div id={STAGE_ID} className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
           {readOnly && (
             <p role="note" className="border-b bg-amber-50 px-3 py-1.5 text-center text-sm text-amber-900">
               {t("readOnly")}

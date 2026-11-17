@@ -11,7 +11,20 @@ export const FORMATIONS = [
   "4-1-4-1",
   "4-5-1",
 ] as const;
-export type FormationId = (typeof FORMATIONS)[number];
+
+/** Systèmes de jeu proposés pour chaque format (joueurs de champ, sans le gardien). */
+export const FORMATIONS_BY_FORMAT: Record<string, readonly string[]> = {
+  football: FORMATIONS,
+  football8: ["3-3-1", "2-3-2", "3-2-2", "2-4-1", "3-1-3"],
+  football5: ["2-2", "1-2-1", "2-1-1", "3-1"],
+};
+
+/** Un système s'écrit « 4-4-2 » : nombre de joueurs par ligne, de la défense à l'attaque. */
+export type FormationId = string;
+
+export function formationsFor(sport: string): readonly string[] {
+  return FORMATIONS_BY_FORMAT[sport] ?? FORMATIONS;
+}
 
 export interface FormationSlot {
   x: number;
@@ -22,7 +35,7 @@ export interface FormationSlot {
 }
 
 /**
- * Calcule les 11 positions d'une formation.
+ * Calcule les positions d'une formation (gardien compris).
  * `side` 0 défend à gauche (en bas à la verticale), `side` 1 en face.
  */
 export function formationSlots(
@@ -37,7 +50,8 @@ export function formationSlots(
   const slots: FormationSlot[] = [];
 
   const place = (depth: number, lateral: number) => {
-    let x = 4 + depth * (half - 10);
+    // Marges proportionnelles : 4 m et 10 m sur un terrain de 105 m.
+    let x = pitch.length * 0.038 + depth * (half - pitch.length * 0.095);
     const y = lateral * pitch.width;
     if (side === 1) x = pitch.length - x;
     return orientation === "vertical" ? toVertical(x, y, pitch.length) : { x, y };

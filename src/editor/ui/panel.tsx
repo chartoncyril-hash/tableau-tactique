@@ -26,7 +26,8 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GRASS_PRESETS, LINE_STYLES } from "../scene/defaults";
-import { facingFor, FORMATIONS, type FormationId } from "../scene/formations";
+import { facingFor, formationsFor, type FormationId } from "../scene/formations";
+import { CATEGORIES, FORMATS, formatForCategory, isCategory, type Category } from "../pitches/formats";
 import {
   EASINGS,
   LINE_KINDS,
@@ -390,7 +391,7 @@ export function Panel() {
   const selection = useEditor((s) => s.selection);
   const overlays = useEditor((s) => s.overlays);
   const s = useEditor.getState();
-  const [formation, setFormation] = useState<FormationId>("4-4-2");
+  const [chosen, setFormation] = useState<FormationId>("4-4-2");
   const online = useProject((p) => p.status === "ready");
 
   const objects = useMemo(() => {
@@ -399,6 +400,9 @@ export function Panel() {
   }, [scene.objects, selection]);
 
   const { pitch, teams } = scene;
+  const formations = formationsFor(pitch.sport);
+  // Le système choisi suit le format : à 8, un « 4-4-2 » n'a pas de sens.
+  const formation = formations.includes(chosen) ? chosen : formations[0];
 
   return (
     <div className="flex flex-col">
@@ -408,6 +412,32 @@ export function Panel() {
       {online && <ProjectSections />}
 
       <Section title={t("pitch")}>
+        <Field label={t("category")}>
+          <Select
+            value={isCategory(pitch.category) ? pitch.category : ""}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (!value) s.setFormat(pitch.sport, null);
+              else s.setFormat(formatForCategory(value as Category), value);
+            }}
+          >
+            <option value="">{t("categoryNone")}</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {t(`categories.${c}`)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label={t("format")}>
+          <Select value={pitch.sport} onChange={(e) => s.setFormat(e.target.value)}>
+            {FORMATS.map((f) => (
+              <option key={f} value={f}>
+                {t(`formats.${f}`)}
+              </option>
+            ))}
+          </Select>
+        </Field>
         <Field label={t("view")}>
           <Select value={pitch.view} onChange={(e) => s.setPitch({ view: e.target.value as PitchView })}>
             {VIEWS.map((v) => (
@@ -515,7 +545,7 @@ export function Panel() {
         )}
         <Field label={t("formation")}>
           <Select value={formation} onChange={(e) => setFormation(e.target.value as FormationId)}>
-            {FORMATIONS.map((f) => (
+            {formations.map((f) => (
               <option key={f} value={f}>
                 {f}
               </option>

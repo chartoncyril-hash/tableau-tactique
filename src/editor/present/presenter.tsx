@@ -1,16 +1,22 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Eraser, NotebookText, Pencil, Presentation, X } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, Eraser, NotebookText, Pause, Pencil, Play, Presentation, Square, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { DRILL_SHORT_FIELDS, DRILL_TEXT_FIELDS } from "@/lib/sheet";
 import { cn } from "@/lib/utils";
-import { sessionSnapshot, useProject } from "../project-session";
+import { pause, play, stop, usePlayback } from "../animation/playback";
+import { selectBoard, sessionSnapshot, useProject } from "../project-session";
 import { viewRect } from "../pitches";
+import { useEditor } from "../store";
+import { View3dStage } from "../three/view-3d-overlay";
+import { setPresenting3d, useView3d } from "../three/view-mode";
 import { IconButton } from "../ui/controls";
 
-const BoardPlayer = dynamic(() => import("@/components/share/board-player"), { ssr: false });
+const BoardPlayer = dynamic(() => import("@/components/share/board-player"), {
+  ssr: false,
+});
 
 const PAD = 2;
 const INKS = ["#facc15", "#ef4444", "#ffffff", "#22d3ee"];
@@ -21,7 +27,17 @@ type Stroke = { color: string; points: number[] };
  * Calque de dessin à main levée, posé sur le tableau. Les traits sont gardés en coordonnées
  * relatives (0 à 1) pour suivre un changement de taille ; rien n'est enregistré.
  */
-function InkLayer({ active, color, strokes, onChange }: { active: boolean; color: string; strokes: Stroke[]; onChange: (s: Stroke[]) => void }) {
+function InkLayer({
+  active,
+  color,
+  strokes,
+  onChange,
+}: {
+  active: boolean;
+  color: string;
+  strokes: Stroke[];
+  onChange: (s: Stroke[]) => void;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const drawing = useRef<Stroke | null>(null);
 
@@ -91,6 +107,45 @@ function InkLayer({ active, color, strokes, onChange }: { active: boolean; color
   );
 }
 
+/** Lecture de l'animation sous la vue 3D : le tableau présenté est celui de l'éditeur. */
+function Playback3d() {
+  const t = useTranslations("editor.anim");
+  const frames = useEditor((s) => s.scene.frames?.length ?? 0);
+  const currentStep = useEditor((s) => s.currentStep);
+  const mode = usePlayback((s) => s.mode);
+  const playingStep = usePlayback((s) => s.step);
+  const active = mode === "idle" ? currentStep : playingStep;
+  if (frames === 0) return null;
+  return (
+    <div className="flex h-14 shrink-0 items-center justify-center gap-1 [&_button]:text-white [&_button:hover]:bg-white/10">
+      <IconButton
+        icon={mode === "playing" ? Pause : Play}
+        label={mode === "playing" ? t("pause") : t("play")}
+        onClick={mode === "playing" ? pause : play}
+      />
+      <IconButton icon={Square} label={t("stop")} disabled={mode === "idle"} onClick={() => stop()} />
+      <div role="tablist" aria-label={t("steps")} className="ml-2 flex gap-1">
+        {Array.from({ length: frames + 1 }, (_, step) => (
+          <button
+            key={step}
+            type="button"
+            role="tab"
+            aria-selected={active === step}
+            aria-label={step === 0 ? t("start") : t("step", { n: step })}
+            onClick={() => (mode === "idle" ? useEditor.getState().setStep(step) : stop(step))}
+            className={cn(
+              "h-9 min-w-9 rounded-md px-2.5 text-sm tabular-nums",
+              active === step ? "bg-white text-neutral-900" : "bg-white/10",
+            )}
+          >
+            {step === 0 ? t("start") : step}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Mode présentation plein écran : un tableau à la fois, en grand, pour une causerie. */
 function Presenter({ onClose }: { onClose: () => void }) {
   const t = useTranslations("present");
@@ -105,6 +160,8 @@ function Presenter({ onClose }: { onClose: () => void }) {
   const [ink, setInk] = useState(INKS[0]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [notes, setNotes] = useState(false);
+  // Ouverte depuis la vue 3D, la présentation démarre en 3D.
+  const [three, setThree] = useState(() => useView3d.getState().mode === "3d");
   const [size, setSize] = useState({ w: 0, h: 0 });
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -119,11 +176,22 @@ function Presenter({ onClose }: { onClose: () => void }) {
     [boards.length],
   );
 
+  // En 3D, le tableau présenté devient celui de l'éditeur : la vue 3D et la lecture s'en servent.
+  useEffect(() => {
+    if (three && board) selectBoard(board.id);
+  }, [three, board]);
+  useEffect(() => {
+    setPresenting3d(three);
+    return () => setPresenting3d(false);
+  }, [three]);
+
   // Plein écran si le navigateur le permet ; le quitter (Échap du navigateur) ferme la présentation.
   useEffect(() => {
     const el = rootRef.current;
     let entered = false;
-    el?.requestFullscreen?.().then(() => (entered = true)).catch(() => undefined);
+    el?.requestFullscreen?.()
+      .then(() => (entered = true))
+      .catch(() => undefined);
     const onChange = () => {
       if (entered && !document.fullscreenElement) onClose();
     };
@@ -142,12 +210,21 @@ function Presenter({ onClose }: { onClose: () => void }) {
       else if (e.key.toLowerCase() === "d") setPen((p) => !p);
       else if (e.key.toLowerCase() === "x") setStrokes([]);
       else if (e.key.toLowerCase() === "n") setNotes((n) => !n);
-      else return;
+      else if (e.key.toLowerCase() === "v") setThree((v) => !v);
+      else if (three && e.key === " ") {
+        if (usePlayback.getState().mode === "playing") pause();
+        else play();
+      } else if (three && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        const { currentStep, scene, setStep } = useEditor.getState();
+        const last = scene.frames?.length ?? 0;
+        stop();
+        setStep(Math.min(last, Math.max(0, currentStep + (e.key === "ArrowDown" ? 1 : -1))));
+      } else return;
       e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, onClose]);
+  }, [go, onClose, three]);
 
   useEffect(() => {
     const el = stageRef.current;
@@ -164,7 +241,9 @@ function Presenter({ onClose }: { onClose: () => void }) {
   // Le plus grand tableau qui tienne, commandes de lecture comprises.
   const width = Math.max(200, Math.min(size.w, (size.h - controls - 16) * ratio));
   const drill = board.sheet;
-  const lines = [...DRILL_SHORT_FIELDS, ...DRILL_TEXT_FIELDS].filter((f) => drill[f]).map((f) => ({ label: tSheet(`fields.${f}`), text: drill[f]! }));
+  const lines = [...DRILL_SHORT_FIELDS, ...DRILL_TEXT_FIELDS]
+    .filter((f) => drill[f])
+    .map((f) => ({ label: tSheet(`fields.${f}`), text: drill[f]! }));
 
   return (
     <div
@@ -183,6 +262,7 @@ function Presenter({ onClose }: { onClose: () => void }) {
           <IconButton icon={ChevronLeft} label={t("previous")} disabled={index === 0} onClick={() => go(-1)} />
           <IconButton icon={ChevronRight} label={t("next")} disabled={index === boards.length - 1} onClick={() => go(1)} />
           <span className="mx-1 h-6 w-px bg-white/20" />
+          <IconButton icon={Box} label={t("view3d")} active={three} onClick={() => setThree((v) => !v)} />
           <IconButton icon={Pencil} label={t("pen")} active={pen} onClick={() => setPen((p) => !p)} />
           {pen &&
             INKS.map((color) => (
@@ -209,7 +289,8 @@ function Presenter({ onClose }: { onClose: () => void }) {
           ref={stageRef}
           className="flex min-w-0 flex-1 items-center justify-center"
           onPointerDown={(e) => {
-            if (!pen) swipe.current = e.clientX;
+            // En 3D, glisser fait tourner la caméra : pas de changement de tableau au balayage.
+            if (!pen && !three) swipe.current = e.clientX;
           }}
           onPointerUp={(e) => {
             if (swipe.current === null) return;
@@ -218,18 +299,31 @@ function Presenter({ onClose }: { onClose: () => void }) {
             if (Math.abs(dx) > 80) go(dx < 0 ? 1 : -1);
           }}
         >
-          {size.w > 0 && (
-            <div key={board.id} style={{ width }} className="rounded-xl bg-card p-2 text-card-foreground">
-              <BoardPlayer
-                scene={board.scene}
-                keyboard
-                overlay={<InkLayer active={pen} color={ink} strokes={strokes} onChange={setStrokes} />}
-              />
+          {three ? (
+            <div className="flex h-full w-full flex-col">
+              <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl">
+                <View3dStage interactive={false} />
+                <InkLayer active={pen} color={ink} strokes={strokes} onChange={setStrokes} />
+              </div>
+              <Playback3d />
             </div>
+          ) : (
+            size.w > 0 && (
+              <div key={board.id} style={{ width }} className="rounded-xl bg-card p-2 text-card-foreground">
+                <BoardPlayer
+                  scene={board.scene}
+                  keyboard
+                  overlay={<InkLayer active={pen} color={ink} strokes={strokes} onChange={setStrokes} />}
+                />
+              </div>
+            )
           )}
         </div>
         {notes && (
-          <aside aria-label={t("notes")} className="hidden w-80 shrink-0 overflow-y-auto rounded-xl bg-white/5 p-4 text-sm md:block">
+          <aside
+            aria-label={t("notes")}
+            className="hidden w-80 shrink-0 overflow-y-auto rounded-xl bg-white/5 p-4 text-sm md:block"
+          >
             <dl className="flex flex-col gap-3">
               {lines.map((line) => (
                 <div key={line.label}>

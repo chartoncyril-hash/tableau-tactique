@@ -24,6 +24,7 @@ import {
   type MemberRow,
 } from "@/lib/data/clubs-api";
 import { cn } from "@/lib/utils";
+import { ClubLogoField } from "./club-logo-field";
 import { refreshClubs, setWorkspace, useWorkspace } from "@/lib/workspace";
 
 const select = "h-11 rounded-md border border-input bg-card px-2 text-sm md:h-9";
@@ -182,6 +183,7 @@ function ClubPanel({ clubId, name, role }: { clubId: string; name: string; role:
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             />
           </label>
+          <ClubLogoField clubId={clubId} />
         </Card>
       )}
 
