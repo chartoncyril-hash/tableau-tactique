@@ -7,6 +7,7 @@ import { Dialog } from "@/components/dashboard/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { isAppAdmin } from "@/lib/data/admin-api";
 import { createClub } from "@/lib/data/clubs-api";
 import { cn } from "@/lib/utils";
 import { refreshClubs, setWorkspace, useWorkspace } from "@/lib/workspace";
@@ -22,9 +23,12 @@ export function AppNav() {
   const clubs = useWorkspace((s) => s.clubs);
   const loaded = useWorkspace((s) => s.loaded);
   const [creating, setCreating] = useState(false);
+  const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
     void refreshClubs();
+    // Onglet du tableau de bord : visible du seul propriétaire (la base refuse les autres).
+    void isAppAdmin().then(setAdmin);
   }, []);
 
   const tabs = [
@@ -32,6 +36,7 @@ export function AppNav() {
     { href: "/app/teams", key: "teams", active: pathname.startsWith("/app/teams") },
     { href: "/app/library", key: "library", active: pathname.startsWith("/app/library") },
     ...(clubId ? [{ href: "/app/club", key: "club", active: pathname.startsWith("/app/club") }] : []),
+    ...(admin ? [{ href: "/app/admin", key: "admin", active: pathname.startsWith("/app/admin") }] : []),
   ] as const;
 
   const onChange = (value: string) => {

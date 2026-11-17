@@ -794,7 +794,8 @@
     "cancel": "Annuler",
     "close": "Fermer",
     "error": "Création impossible. Réessayez.",
-    "library": "Bibliothèque"
+    "library": "Bibliothèque",
+    "admin": "Tableau de bord"
   },
   "club": {
     "title": "Club",
@@ -955,5 +956,44 @@
     "boardNotes": "Notes",
     "help": "← → tableaux · Espace : lecture · ↑ ↓ étapes · V : vue 3D · D : dessiner · X : effacer · Échap : quitter",
     "view3d": "Vue 3D (V)"
+  },
+  "admin": {
+    "title": "Tableau de bord",
+    "intro": "Utilisation de l'application : comptes, activité et contenus créés. Visible de vous seul.",
+    "refresh": "Actualiser",
+    "error": "Statistiques indisponibles pour le moment.",
+    "loading": "Chargement…",
+    "forbidden": "Cette page est réservée à l'administrateur de l'application.",
+    "accounts": "Comptes",
+    "kpi": {
+      "total": "Comptes",
+      "confirmed": "{count, plural, one {# adresse confirmée} other {# adresses confirmées}}",
+      "new7": "Nouveaux (7 jours)",
+      "new30": "{count} sur 30 jours",
+      "active7": "Actifs (7 jours)",
+      "active30": "{count} sur 30 jours",
+      "projects": "Projets",
+      "boards": "{count, plural, one {# tableau} other {# tableaux}}"
+    },
+    "signups": "Inscriptions, 30 derniers jours",
+    "projectsPerDay": "Projets créés, 30 derniers jours",
+    "content": "Contenus",
+    "items": {
+      "clubs": "Clubs",
+      "teams": "Effectifs",
+      "players": "Joueurs",
+      "drills": "Exercices enregistrés",
+      "shares": "Liens de partage actifs",
+      "comments": "Commentaires"
+    },
+    "recent": "Derniers comptes",
+    "unconfirmed": "non confirmé",
+    "col": {
+      "email": "Adresse",
+      "created": "Inscription",
+      "lastSeen": "Dernière connexion",
+      "projects": "Projets",
+      "clubs": "Clubs"
+    }
   }
 }
