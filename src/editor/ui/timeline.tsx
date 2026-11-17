@@ -1,12 +1,21 @@
 "use client";
 
-import { Footprints, Pause, Play, Plus, Repeat, Square, Trash2 } from "lucide-react";
+import {
+  Footprints,
+  Pause,
+  Play,
+  Plus,
+  Repeat,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { pause, play, seek, stop, usePlayback } from "../animation/playback";
 import { totalDuration } from "../scene/animation";
 import { useEditor } from "../store";
 import { cn } from "@/lib/utils";
 import { IconButton } from "./controls";
+import { FullscreenButton } from "./fullscreen-button";
 
 const SPEEDS = [0.5, 1, 1.5, 2];
 
@@ -41,10 +50,19 @@ export function Timeline() {
         disabled={count === 0}
         onClick={mode === "playing" ? pause : play}
       />
-      <IconButton icon={Square} label={t("stop")} disabled={!previewing} onClick={() => stop()} />
+      <IconButton
+        icon={Square}
+        label={t("stop")}
+        disabled={!previewing}
+        onClick={() => stop()}
+      />
       <span className="mx-1 h-6 w-px shrink-0 bg-border" />
 
-      <div role="tablist" aria-label={t("steps")} className="flex items-center gap-1">
+      <div
+        role="tablist"
+        aria-label={t("steps")}
+        className="flex items-center gap-1"
+      >
         {Array.from({ length: count + 1 }, (_, step) => (
           <button
             key={step === 0 ? "start" : frames![step - 1].id}
@@ -93,7 +111,11 @@ export function Timeline() {
             />
             <span>s</span>
           </label>
-          <IconButton icon={Trash2} label={t("removeStep")} onClick={() => editor.removeStep(currentStep)} />
+          <IconButton
+            icon={Trash2}
+            label={t("removeStep")}
+            onClick={() => editor.removeStep(currentStep)}
+          />
         </>
       )}
 
@@ -113,7 +135,9 @@ export function Timeline() {
       <select
         aria-label={t("speed")}
         value={speed}
-        onChange={(e) => usePlayback.setState({ speed: Number(e.target.value) })}
+        onChange={(e) =>
+          usePlayback.setState({ speed: Number(e.target.value) })
+        }
         className="h-9 shrink-0 rounded-md border border-input bg-card px-1.5 text-sm"
       >
         {SPEEDS.map((value) => (
@@ -134,8 +158,10 @@ export function Timeline() {
         className="ml-1 min-w-32 flex-1 accent-primary"
       />
       <span className="w-20 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-        {(previewing ? Math.min(time, total) : 0).toFixed(1)} / {total.toFixed(1)} s
+        {(previewing ? Math.min(time, total) : 0).toFixed(1)} /{" "}
+        {total.toFixed(1)} s
       </span>
+      <FullscreenButton />
     </div>
   );
 }

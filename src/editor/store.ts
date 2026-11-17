@@ -5,6 +5,7 @@ import { DEFAULT_STEP_DURATION, resolveStep } from "./scene/animation";
 import { createScene, DEFAULT_INK, LINE_STYLES, TEAM_COLORS } from "./scene/defaults";
 import { applyPatch, type ScenePatch } from "./collab/patch";
 import { facingFor, formationSlots, type FormationId } from "./scene/formations";
+import { rescaleToPitch } from "./scene/format";
 import { assignLineup, shortName, type PlayerRow, type TeamRow } from "@/lib/roster";
 import { alignDeltas, distributeDeltas, type AlignMode } from "./scene/geometry";
 import {
@@ -135,6 +136,8 @@ export interface EditorState {
 
   setPitch: (patch: Partial<PitchSettings>, coalesceKey?: string) => void;
   toggleOrientation: () => void;
+  /** Change de format de jeu (et de catégorie) : le schéma est mis à l'échelle du nouveau terrain. */
+  setFormat: (sport: string, category?: string | null) => void;
   updateTeam: (id: string, patch: Partial<Team>, coalesceKey?: string) => void;
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
@@ -677,6 +680,13 @@ export const useEditor = create<EditorState>()((set, get) => ({
       },
       coalesceKey,
     );
+  },
+  setFormat(sport, category) {
+    get().commit("format", (scene) => {
+      if (sport !== scene.pitch.sport) rescaleToPitch(scene, sport);
+      if (category === null) delete scene.pitch.category;
+      else if (category !== undefined) scene.pitch.category = category;
+    }, undefined, true);
   },
   toggleOrientation() {
     get().commit(

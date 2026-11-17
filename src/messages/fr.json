@@ -245,7 +245,26 @@
       "halfTurn": "Demi-tour",
       "faceGoal": "Face au but adverse",
       "facingValue": "Orientation : {degrees} degrés",
-      "showFacing": "Montrer l'orientation des joueurs (bras et pointe)"
+      "showFacing": "Montrer l'orientation des joueurs (bras et pointe)",
+      "category": "Catégorie",
+      "categoryNone": "Non précisée",
+      "format": "Format de jeu",
+      "categories": {
+        "U7": "U6-U7",
+        "U9": "U8-U9",
+        "U11": "U10-U11",
+        "U13": "U12-U13",
+        "U15": "U14-U15",
+        "U17": "U16-U17",
+        "U19": "U18-U19",
+        "senior": "Seniors",
+        "veteran": "Vétérans"
+      },
+      "formats": {
+        "football": "Foot à 11 (105 × 68 m)",
+        "football8": "Foot à 8 (65 × 50 m)",
+        "football5": "Foot à 5 (40 × 30 m)"
+      }
     },
     "bank": {
       "categories": {
@@ -333,7 +352,9 @@
       "attach": "Conduit par",
       "attachNone": "Personne (ballon libre)",
       "clearMove": "Supprimer ce déplacement",
-      "moveHint": "Déplacez l'objet pour fixer sa position à la fin de l'étape. La poignée orange au milieu de la trajectoire la courbe ; deux touches dessus la redressent."
+      "moveHint": "Déplacez l'objet pour fixer sa position à la fin de l'étape. La poignée orange au milieu de la trajectoire la courbe ; deux touches dessus la redressent.",
+      "fullscreen": "Plein écran",
+      "exitFullscreen": "Quitter le plein écran"
     },
     "export": {
       "open": "Exporter",
@@ -396,7 +417,18 @@
         "people": "Personnages",
         "pawns": "Pions"
       },
-      "help": "Faites glisser un joueur, un ballon ou du matériel pour le déplacer. Glissez sur le terrain pour tourner, pincez ou molette pour zoomer. Les tracés et zones se modifient en 2D."
+      "help": "Faites glisser un joueur, un ballon ou du matériel pour le déplacer. Glissez sur le terrain pour tourner, pincez ou molette pour zoomer. Les tracés et zones se modifient en 2D.",
+      "decor": "Décor",
+      "decors": {
+        "stadium": "Stade",
+        "plain": "Pelouse seule"
+      },
+      "logoClub": "Logo du club",
+      "logoMine": "Mon logo",
+      "logoAdd": "Ajouter un logo",
+      "logoChange": "Changer le logo",
+      "logoRemove": "Retirer",
+      "logoError": "Envoi impossible"
     },
     "readOnly": "Lecture seule : vous êtes lecteur dans ce club. Vous pouvez présenter, lire l'animation, passer en 3D et exporter.",
     "collab": {
@@ -807,7 +839,14 @@
     "delete": "Supprimer le club",
     "deleteConfirm": "Supprimer « {name} » efface définitivement tous ses projets, dossiers et effectifs. Tapez le nom du club pour confirmer.",
     "deleteField": "Nom du club à confirmer",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "logo": "Logo du club",
+    "logoAlt": "Logo actuel du club",
+    "logoAdd": "Ajouter un logo",
+    "logoChange": "Changer le logo",
+    "logoRemove": "Retirer",
+    "logoHint": "Affiché dans le stade de la vue 3D : panneaux autour du terrain et haut des tribunes. PNG transparent conseillé.",
+    "logoError": "Envoi impossible. Réessayez avec une image PNG ou JPEG."
   },
   "invite": {
     "title": "Invitation",
@@ -894,6 +933,7 @@
     "notes": "Consignes (N)",
     "close": "Quitter la présentation",
     "boardNotes": "Notes",
-    "help": "← → tableaux · Espace : lecture · ↑ ↓ étapes · D : dessiner · X : effacer · Échap : quitter"
+    "help": "← → tableaux · Espace : lecture · ↑ ↓ étapes · V : vue 3D · D : dessiner · X : effacer · Échap : quitter",
+    "view3d": "Vue 3D (V)"
   }
 }

@@ -245,7 +245,26 @@
       "halfTurn": "Half turn",
       "faceGoal": "Face the opposing goal",
       "facingValue": "Facing: {degrees} degrees",
-      "showFacing": "Show player facing (arms and pointer)"
+      "showFacing": "Show player facing (arms and pointer)",
+      "category": "Age group",
+      "categoryNone": "Not set",
+      "format": "Game format",
+      "categories": {
+        "U7": "U6-U7",
+        "U9": "U8-U9",
+        "U11": "U10-U11",
+        "U13": "U12-U13",
+        "U15": "U14-U15",
+        "U17": "U16-U17",
+        "U19": "U18-U19",
+        "senior": "Seniors",
+        "veteran": "Veterans"
+      },
+      "formats": {
+        "football": "11-a-side (105 × 68 m)",
+        "football8": "8-a-side (65 × 50 m)",
+        "football5": "5-a-side (40 × 30 m)"
+      }
     },
     "bank": {
       "categories": {
@@ -333,7 +352,9 @@
       "attach": "Carried by",
       "attachNone": "Nobody (free ball)",
       "clearMove": "Remove this movement",
-      "moveHint": "Move the object to set where it ends the step. The orange handle in the middle of the path bends it; double-tap it to straighten."
+      "moveHint": "Move the object to set where it ends the step. The orange handle in the middle of the path bends it; double-tap it to straighten.",
+      "fullscreen": "Full screen",
+      "exitFullscreen": "Exit full screen"
     },
     "export": {
       "open": "Export",
@@ -396,7 +417,18 @@
         "people": "Figures",
         "pawns": "Pawns"
       },
-      "help": "Drag a player, ball or equipment to move it. Drag the pitch to orbit, pinch or scroll to zoom. Lines and zones are edited in 2D."
+      "help": "Drag a player, ball or equipment to move it. Drag the pitch to orbit, pinch or scroll to zoom. Lines and zones are edited in 2D.",
+      "decor": "Setting",
+      "decors": {
+        "stadium": "Stadium",
+        "plain": "Pitch only"
+      },
+      "logoClub": "Club logo",
+      "logoMine": "My logo",
+      "logoAdd": "Add a logo",
+      "logoChange": "Change logo",
+      "logoRemove": "Remove",
+      "logoError": "Upload failed"
     },
     "readOnly": "Read-only: you are a viewer in this club. You can present, play the animation, switch to 3D and export.",
     "collab": {
@@ -807,7 +839,14 @@
     "delete": "Delete the club",
     "deleteConfirm": "Deleting “{name}” permanently erases all its projects, folders and squads. Type the club name to confirm.",
     "deleteField": "Club name to confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "logo": "Club logo",
+    "logoAlt": "Current club logo",
+    "logoAdd": "Add a logo",
+    "logoChange": "Change logo",
+    "logoRemove": "Remove",
+    "logoHint": "Shown in the 3D stadium: boards around the pitch and the top of the stands. A transparent PNG works best.",
+    "logoError": "Upload failed. Try again with a PNG or JPEG image."
   },
   "invite": {
     "title": "Invitation",
@@ -894,6 +933,7 @@
     "notes": "Instructions (N)",
     "close": "Exit presentation",
     "boardNotes": "Notes",
-    "help": "← → boards · Space: play · ↑ ↓ steps · D: draw · X: clear · Esc: exit"
+    "help": "← → boards · Space: play · ↑ ↓ steps · V: 3D view · D: draw · X: clear · Esc: exit",
+    "view3d": "3D view (V)"
   }
 }

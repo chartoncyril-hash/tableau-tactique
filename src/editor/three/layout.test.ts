@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { createScene } from "../scene/defaults";
-import { cameraPose, isGroundDrawing, sceneOrigin, toWorld, yaw } from "./layout";
+import { ballAtFeet, cameraPose, isGroundDrawing, sceneOrigin, toWorld, yaw } from "./layout";
 
 const pitch = createScene().pitch;
 const view = { x: -55, y: -36, w: 110, h: 72 };
 
 describe("repère 3D", () => {
   it("place le centre du cadrage à l'origine", () => {
-    const o = sceneOrigin({ ...pitch, view: "full", orientation: "horizontal" });
+    const o = sceneOrigin({
+      ...pitch,
+      view: "full",
+      orientation: "horizontal",
+    });
     expect(toWorld(o.x, o.y, o)).toEqual([0, 0, 0]);
     expect(toWorld(o.x + 10, o.y + 5, o)).toEqual([10, 0, 5]);
   });
@@ -19,9 +23,28 @@ describe("repère 3D", () => {
 
   it("pose zones, tracés et textes au sol, pas les joueurs ni le matériel", () => {
     const base = { id: "a", x: 0, y: 0, rotation: 0 };
-    expect(isGroundDrawing({ ...base, type: "zone", shape: "rect", width: 1, height: 1, points: [], fill: "#fff", opacity: 1 })).toBe(true);
+    expect(
+      isGroundDrawing({
+        ...base,
+        type: "zone",
+        shape: "rect",
+        width: 1,
+        height: 1,
+        points: [],
+        fill: "#fff",
+        opacity: 1,
+      }),
+    ).toBe(true);
     expect(isGroundDrawing({ ...base, type: "ball" })).toBe(false);
-    expect(isGroundDrawing({ ...base, type: "equipment", kind: "cone", color: "#f00", scale: 1 })).toBe(false);
+    expect(
+      isGroundDrawing({
+        ...base,
+        type: "equipment",
+        kind: "cone",
+        color: "#f00",
+        scale: 1,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -51,5 +74,33 @@ describe("points de vue", () => {
     const wide = cameraPose("top", view, false, 40, 2).position[1];
     const narrow = cameraPose("top", view, false, 40, 0.5).position[1];
     expect(narrow).toBeGreaterThan(wide);
+  });
+});
+
+describe("ballAtFeet", () => {
+  const player = { x: 50, y: 30 };
+  it("met dans les pieds un ballon au contact de la pastille", () => {
+    const at = ballAtFeet({ x: 52.3, y: 30 }, [player], 0.6);
+    expect(at.x).toBeCloseTo(50.6);
+    expect(at.y).toBeCloseTo(30);
+  });
+  it("garde la direction du ballon par rapport au joueur", () => {
+    const at = ballAtFeet({ x: 50, y: 28 }, [player], 0.6);
+    expect(at.x).toBeCloseTo(50);
+    expect(at.y).toBeCloseTo(29.4);
+  });
+  it("ne touche pas un ballon éloigné", () => {
+    expect(ballAtFeet({ x: 60, y: 30 }, [player], 0.6)).toEqual({
+      x: 60,
+      y: 30,
+    });
+  });
+  it("raccorde sans saut à la limite de la zone", () => {
+    const edge = ballAtFeet({ x: 53.94, y: 30 }, [player], 0.6);
+    expect(edge.x).toBeCloseTo(53.94, 1);
+  });
+  it("choisit le joueur le plus proche", () => {
+    const at = ballAtFeet({ x: 52, y: 30 }, [player, { x: 55, y: 30 }], 0.6);
+    expect(at.x).toBeCloseTo(50.6);
   });
 });

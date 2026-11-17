@@ -1,9 +1,12 @@
 import type { Orientation, PitchSettings } from "../scene/types";
 import { football } from "./football";
+import { football5, football8 } from "./football-small";
 import type { PitchDefinition, Rect } from "./types";
 
 const registry: Record<string, PitchDefinition> = {
   football,
+  football8,
+  football5,
 };
 
 export function getPitch(sport: string): PitchDefinition {

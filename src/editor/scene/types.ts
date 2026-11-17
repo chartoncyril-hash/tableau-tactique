@@ -6,7 +6,10 @@ export type PitchView = "full" | "half" | "third" | "box" | "blank";
 export type MowStyle = "plain" | "stripes" | "checker";
 
 export interface PitchSettings {
+  /** Terrain : « football » (à 11), « football8 » ou « football5 ». */
   sport: string;
+  /** Catégorie d'âge (U7 à vétérans) ; absente sur les anciens tableaux. */
+  category?: string;
   view: PitchView;
   orientation: Orientation;
   mow: MowStyle;

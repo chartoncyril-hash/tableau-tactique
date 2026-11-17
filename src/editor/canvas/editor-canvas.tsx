@@ -17,7 +17,7 @@ import {
 import type { PlayerObject, SceneObject } from "../scene/types";
 import { requestPhotos, usePhotos } from "@/lib/photos";
 import { playbackTarget, restingPoses, usePlayback } from "../animation/playback";
-import { movePath, resolveStep } from "../scene/animation";
+import { movePath, stepTraces } from "../scene/animation";
 import { displayObjects, lineDefaults, useEditor, type Tool } from "../store";
 import { blockLines, voronoiCells } from "../scene/analysis";
 import { shareCursor } from "../collab/session";
@@ -748,16 +748,8 @@ export function EditorCanvas({ defaultText }: { defaultText: string }) {
 
   const traceStep = previewing ? playingStep : step;
   const traces = useMemo(() => {
-    const frame = traceStep >= 1 ? scene.frames?.[traceStep - 1] : undefined;
-    if (!showTraces || !frame) return [];
-    const from = resolveStep(scene, traceStep - 1);
-    return Object.entries(frame.moves).flatMap(([id, move]) => {
-      const start = from.get(id);
-      if (!start || move.attach) return [];
-      const path = movePath(start, move);
-      if (Math.hypot(move.x - start.x, move.y - start.y) < 0.3) return [];
-      return [{ id, start, move, path }];
-    });
+    if (!showTraces) return [];
+    return stepTraces(scene, traceStep).map((trace) => ({ ...trace, path: movePath(trace.start, trace.move) }));
   }, [scene, traceStep, showTraces]);
 
   const curveTarget =

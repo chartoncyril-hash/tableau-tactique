@@ -111,3 +111,28 @@ export function movePath(from: { x: number; y: number }, move: Move, samples = 2
   }
   return out;
 }
+
+export interface StepTrace {
+  id: string;
+  start: Pose;
+  move: Move;
+}
+
+/** Déplacements de l'étape `step` à tracer (ni ballons conduits, ni petits pas sur place). */
+export function stepTraces(scene: Scene, step: number): StepTrace[] {
+  const frame = step >= 1 ? scene.frames?.[step - 1] : undefined;
+  if (!frame) return [];
+  const from = resolveStep(scene, step - 1);
+  return Object.entries(frame.moves).flatMap(([id, move]) => {
+    const start = from.get(id);
+    if (!start || move.attach) return [];
+    if (Math.hypot(move.x - start.x, move.y - start.y) < 0.3) return [];
+    return [{ id, start, move }];
+  });
+}
+
+/** Tracé en relief d'un déplacement : la cloche d'un ballon y est visible. */
+export function movePath3d(from: { x: number; y: number }, move: Move, samples = 32): Pose[] {
+  const origin: Pose = { x: from.x, y: from.y, rotation: 0, lift: 0 };
+  return Array.from({ length: samples + 1 }, (_, i) => along(origin, move, i / samples));
+}

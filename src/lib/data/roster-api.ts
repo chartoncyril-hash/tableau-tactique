@@ -71,7 +71,7 @@ export async function deletePlayer(player: PlayerRow) {
 }
 
 /** Dossier des photos d'une équipe selon son espace. */
-async function photoFolder(clubId: string | null): Promise<string> {
+export async function photoFolder(clubId: string | null): Promise<string> {
   if (clubId) return `clubs/${clubId}`;
   const { data } = await db().auth.getSession();
   const uid = data.session?.user.id;

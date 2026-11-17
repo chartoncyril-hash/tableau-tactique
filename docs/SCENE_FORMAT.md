@@ -23,7 +23,8 @@ Types de référence : `src/editor/scene/types.ts`.
 {
   "version": 1,
   "pitch": {
-    "sport": "football",            // clé d'un fichier de src/editor/pitches
+    "sport": "football",            // football (à 11) | football8 | football5 (src/editor/pitches)
+    "category": "U11",              // facultatif : U7 | U9 | U11 | U13 | U15 | U17 | U19 | senior | veteran
     "view": "full",                 // full | half | third | box | blank
     "orientation": "horizontal",    // horizontal | vertical
     "mow": "stripes",               // plain | stripes | checker

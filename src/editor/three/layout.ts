@@ -61,9 +61,15 @@ export function cameraPose(preset: CameraPreset, view: Box, vertical: boolean, f
       return { position: [0, d, 0.001], target };
     }
     case "broadcast":
-      return { position: along(0, short * 0.1, 30, fit(long, short * 0.8) * 1.12, false), target };
+      return {
+        position: along(0, short * 0.1, 30, fit(long, short * 0.8) * 1.12, false),
+        target,
+      };
     case "goal":
-      return { position: along(0, long * 0.08, 24, fit(short, long * 0.6) * 1.1, true), target };
+      return {
+        position: along(0, long * 0.08, 24, fit(short, long * 0.6) * 1.1, true),
+        target,
+      };
     case "corner": {
       const d = fit(long, short) * 0.95;
       const e = (30 * Math.PI) / 180;
@@ -72,4 +78,39 @@ export function cameraPose(preset: CameraPreset, view: Box, vertical: boolean, f
       return { position: vertical ? [g, h, g] : [-g, h, g], target };
     }
   }
+}
+
+/**
+ * En 2D, un joueur est une pastille de 3,2 m et le ballon un disque de 1,5 m : un ballon posé
+ * « juste devant » un joueur a son centre à 2,3 m du sien. En relief, le joueur est mince et ce
+ * même ballon semblerait loin de ses pieds. Un ballon proche d'un joueur est donc rapproché :
+ * au contact sur le tableau, il est dans les pieds en 3D ; au-delà de `reach`, rien ne change.
+ */
+export const BALL_CONTACT_2D = 2.35;
+const BALL_REACH_2D = BALL_CONTACT_2D + 1.6;
+
+export function ballAtFeet(
+  ball: { x: number; y: number },
+  players: Iterable<{ x: number; y: number }>,
+  feet: number,
+): { x: number; y: number } {
+  let nearest: { x: number; y: number } | null = null;
+  let best = BALL_REACH_2D;
+  for (const p of players) {
+    const d = Math.hypot(ball.x - p.x, ball.y - p.y);
+    if (d < best) {
+      best = d;
+      nearest = p;
+    }
+  }
+  if (!nearest || best < 1e-3) return ball;
+  const d =
+    best <= BALL_CONTACT_2D
+      ? feet
+      : feet + ((best - BALL_CONTACT_2D) * (BALL_REACH_2D - feet)) / (BALL_REACH_2D - BALL_CONTACT_2D);
+  const k = d / best;
+  return {
+    x: nearest.x + (ball.x - nearest.x) * k,
+    y: nearest.y + (ball.y - nearest.y) * k,
+  };
 }

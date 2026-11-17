@@ -10,8 +10,12 @@ const PORT = 54321;
 const PASSWORD = "motdepasse-test";
 const tables = {
   folders: [], projects: [], boards: [], board_versions: [], shares: [], teams: [], players: [],
-  clubs: [], club_members: [], club_invites: [], board_comments: [], drills: [],
+  clubs: [], club_members: [], club_invites: [], board_comments: [], drills: [], profiles: [],
 };
+/** Comme le déclencheur handle_new_user : un profil par utilisateur connu. */
+function ensureProfile(id) {
+  if (!tables.profiles.some((p) => p.id === id)) tables.profiles.push({ id, display_name: null, locale: "fr", logo_path: null });
+}
 /** Utilisateurs connus (pour la liste des membres d'un club). */
 const users = new Map();
 /** Fichiers du faux stockage : chemin → { bytes, type }. */
@@ -46,6 +50,7 @@ function readable(table, row, uid) {
     case "shares": return editable(table, row, uid);
     case "players": { const t = byId("teams", row.team_id); return !!t && readable("teams", t, uid); }
     case "clubs": return roleOf(row.id, uid) !== null;
+    case "profiles": return row.id === uid;
     case "club_members": return roleOf(row.club_id, uid) !== null;
     case "club_invites": return roleOf(row.club_id, uid) === "admin";
     case "board_comments": { const b = byId("boards", row.board_id); return !!b && readable("boards", b, uid); }
@@ -60,6 +65,7 @@ function editable(table, row, uid) {
     case "players": { const t = byId("teams", row.team_id); return !!t && canEdit(t.club_id, t.owner_id, uid); }
     case "clubs": case "club_invites": return roleOf(row.club_id ?? row.id, uid) === "admin";
     case "club_members": return roleOf(row.club_id, uid) === "admin";
+    case "profiles": return row.id === uid;
     case "board_comments": {
       if (row.author_id === uid) return true;
       const b = byId("boards", row.board_id);
@@ -108,6 +114,7 @@ const userFor = (email) => ({
 function session(email) {
   const user = userFor(email);
   users.set(user.id, email);
+  ensureProfile(user.id);
   const exp = Math.floor(Date.now() / 1000) + 3600;
   const access_token = `${b64({ alg: "HS256", typ: "JWT" })}.${b64({ sub: user.id, email, exp, role: "authenticated", aud: "authenticated" })}.test`;
   return { access_token, token_type: "bearer", expires_in: 3600, expires_at: exp, refresh_token: `r.${Buffer.from(email).toString("base64url")}`, user };
@@ -119,6 +126,7 @@ function userFromRequest(req) {
     if (!payload.email) return null;
     const user = userFor(payload.email);
     users.set(user.id, payload.email);
+    ensureProfile(user.id);
     return user;
   } catch {
     return null;
@@ -173,7 +181,7 @@ function insert(table, body, owner, { check = true } = {}) {
   };
   if (check) {
     // Comme la RLS : pas d'insertion directe dans clubs / club_members, et droit de modifier l'espace visé.
-    if (table === "clubs" || table === "club_members") throw denied();
+    if (table === "clubs" || table === "club_members" || table === "profiles") throw denied();
     if (table === "board_comments") {
       // Quiconque voit le tableau commente, en son nom ; une réponse vise un fil du même tableau.
       if (row.author_id !== owner || !readable(table, row, owner)) throw denied();
@@ -448,6 +456,11 @@ const server = createServer(async (req, res) => {
             if ("resolved_at" in patch) patch.resolved_by = patch.resolved_at ? owner : null;
           }
           if (table === "players" && next.photo_path !== row.photo_path) checkPhoto(next, owner);
+          // Contraintes clubs_logo_path_folder et profiles_logo_path_folder.
+          if (next.logo_path) {
+            const folder = table === "clubs" ? `clubs/${row.id}/` : table === "profiles" ? `${row.id}/` : null;
+            if (folder && !next.logo_path.startsWith(folder)) throw Object.assign(new Error("check constraint"), { status: 400 });
+          }
           if (table === "projects" && next.folder_id && byId("folders", next.folder_id)?.club_id !== next.club_id) throw denied();
           Object.assign(row, patch, { updated_at: stamp() });
           if (table === "boards") touchProject(row.project_id);
