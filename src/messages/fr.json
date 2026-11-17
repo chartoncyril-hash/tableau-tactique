@@ -920,6 +920,25 @@
       "variables": "Variables",
       "method": "Méthode pédagogique",
       "behaviours": "Comportements recherchés"
+    },
+    "catalog": {
+      "tab": "Prêts à l'emploi ({count})",
+      "tabMine": "Mes exercices",
+      "tabClub": "Exercices du club",
+      "short": "Prêts à l'emploi",
+      "mineShort": "Ma bibliothèque",
+      "source": "Source des exercices",
+      "intro": "Des exercices reconnus et éprouvés (école de foot FFF, rondos de l'Ajax et du Barça, FIFA 11+, jeu de position, contre-pressing…), avec le matériel en place, les déplacements animés et la fiche remplie. Créez un projet en un clic ou copiez-les pour les adapter.",
+      "band": "Tranche d'âge",
+      "allAges": "Tous les âges",
+      "bands": {
+        "u9": "U6-U9 · foot à 5",
+        "u13": "U10-U13 · foot à 8",
+        "senior": "U14 à seniors · foot à 11"
+      },
+      "copy": "Copier dans ma bibliothèque",
+      "copyClub": "Copier dans la bibliothèque du club",
+      "copied": "« {title} » est dans votre bibliothèque : vous pouvez l'adapter."
     }
   },
   "present": {

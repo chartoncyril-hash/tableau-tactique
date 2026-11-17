@@ -15,6 +15,8 @@ import { DRILL_CATEGORIES, listDrills, trashDrill, type DrillRow } from "@/lib/d
 import { DRILL_SHORT_FIELDS, DRILL_TEXT_FIELDS } from "@/lib/sheet";
 import { cn } from "@/lib/utils";
 import { canEditRole, roleIn, useWorkspace } from "@/lib/workspace";
+import { CATALOG } from "@/lib/catalog";
+import { CatalogSection } from "./catalog-section";
 import { DrillThumb } from "./drill-thumb";
 
 const BoardPlayer = dynamic(() => import("@/components/share/board-player"), { ssr: false });
@@ -33,22 +35,27 @@ export function LibraryPage() {
   const [preview, setPreview] = useState<DrillRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
+  // Les exercices prêts à l'emploi d'abord : utiles dès le premier jour, sans rien avoir créé.
+  const [source, setSource] = useState<"catalog" | "mine">("catalog");
   const key = JSON.stringify([clubId, category, q, reload]);
   const drills = state?.key === key ? state.drills : null;
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || source !== "mine") return;
     let cancelled = false;
-    const timer = setTimeout(() => {
-      listDrills(clubId, { category, q })
-        .then((rows) => !cancelled && setState({ key, drills: rows }))
-        .catch(() => !cancelled && setError(true));
-    }, q ? 250 : 0);
+    const timer = setTimeout(
+      () => {
+        listDrills(clubId, { category, q })
+          .then((rows) => !cancelled && setState({ key, drills: rows }))
+          .catch(() => !cancelled && setError(true));
+      },
+      q ? 250 : 0,
+    );
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [key, clubId, category, q, loaded]);
+  }, [key, clubId, category, q, loaded, source]);
 
   /** Nouveau projet à partir de l'exercice : son tableau, ses consignes et ses notes. */
   const startProject = async (drill: DrillRow) => {
@@ -83,59 +90,97 @@ export function LibraryPage() {
         <h1 className="text-3xl font-semibold tracking-tight">{t("pageTitle")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t(clubId ? "pageIntroClub" : "pageIntro")}</p>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="relative flex-1 sm:max-w-sm">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input type="search" aria-label={t("search")} placeholder={t("search")} value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
-        </label>
-        <div role="radiogroup" aria-label={t("category")} className="flex gap-1 overflow-x-auto pb-1">
-          {["", ...DRILL_CATEGORIES].map((c) => (
-            <button
-              key={c || "all"}
-              type="button"
-              role="radio"
-              aria-checked={category === c}
-              onClick={() => setCategory(c)}
-              className={cn(
-                "h-9 shrink-0 rounded-full border px-3 text-sm whitespace-nowrap",
-                category === c ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              {c ? t(`categories.${c}`) : t("all")}
-            </button>
-          ))}
-        </div>
+      <div role="tablist" aria-label={t("pageTitle")} className="grid max-w-md grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+        {(["catalog", "mine"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={source === key}
+            onClick={() => setSource(key)}
+            className={cn("h-9 rounded-md text-sm", source === key ? "bg-card font-medium shadow-sm" : "text-muted-foreground")}
+          >
+            {key === "catalog" ? t("catalog.tab", { count: CATALOG.length }) : t(clubId ? "catalog.tabClub" : "catalog.tabMine")}
+          </button>
+        ))}
       </div>
-      {error && <p role="alert" className="text-sm text-destructive">{t("error")}</p>}
-      {drills === null ? (
-        <p className="text-muted-foreground" aria-busy="true">{t("loading")}</p>
-      ) : drills.length === 0 ? (
-        <Card className="p-6 text-sm text-muted-foreground">{t(q || category ? "noResult" : "emptyPage")}</Card>
+      {source === "catalog" ? (
+        <CatalogSection />
       ) : (
-        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4" data-testid="drill-grid">
-          {drills.map((drill) => (
-            <li key={drill.id}>
-              <button
-                type="button"
-                onClick={() => setPreview(drill)}
-                className="flex w-full flex-col gap-2 rounded-xl border bg-card p-2 text-left transition-shadow hover:shadow-md"
-              >
-                <DrillThumb scene={drill.scene} title={drill.title} />
-                <span className="truncate px-1 font-medium">{drill.title}</span>
-                <span className="flex flex-wrap gap-1 px-1 pb-1">
-                  {drill.category && (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{t(`categories.${drill.category}`)}</span>
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="relative flex-1 sm:max-w-sm">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                aria-label={t("search")}
+                placeholder={t("search")}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className="pl-9"
+              />
+            </label>
+            <div role="radiogroup" aria-label={t("category")} className="flex gap-1 overflow-x-auto pb-1">
+              {["", ...DRILL_CATEGORIES].map((c) => (
+                <button
+                  key={c || "all"}
+                  type="button"
+                  role="radio"
+                  aria-checked={category === c}
+                  onClick={() => setCategory(c)}
+                  className={cn(
+                    "h-9 shrink-0 rounded-full border px-3 text-sm whitespace-nowrap",
+                    category === c ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
                   )}
-                  {drill.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {tag}
+                >
+                  {c ? t(`categories.${c}`) : t("all")}
+                </button>
+              ))}
+            </div>
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {t("error")}
+            </p>
+          )}
+          {drills === null ? (
+            <p className="text-muted-foreground" aria-busy="true">
+              {t("loading")}
+            </p>
+          ) : drills.length === 0 ? (
+            <Card className="p-6 text-sm text-muted-foreground">{t(q || category ? "noResult" : "emptyPage")}</Card>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4" data-testid="drill-grid">
+              {drills.map((drill) => (
+                <li key={drill.id}>
+                  <button
+                    type="button"
+                    onClick={() => setPreview(drill)}
+                    className="flex w-full flex-col gap-2 rounded-xl border bg-card p-2 text-left transition-shadow hover:shadow-md"
+                  >
+                    <DrillThumb scene={drill.scene} title={drill.title} />
+                    <span className="truncate px-1 font-medium">{drill.title}</span>
+                    <span className="flex flex-wrap gap-1 px-1 pb-1">
+                      {drill.category && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                          {t(`categories.${drill.category}`)}
+                        </span>
+                      )}
+                      {drill.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          {tag}
+                        </span>
+                      ))}
                     </span>
-                  ))}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
       {preview && (
         <Dialog title={preview.title} closeLabel={t("close")} onClose={() => setPreview(null)}>

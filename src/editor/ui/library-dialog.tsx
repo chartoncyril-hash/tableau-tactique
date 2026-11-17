@@ -8,6 +8,8 @@ import { DrillThumb } from "@/components/library/drill-thumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DRILL_CATEGORIES, listDrills, parseTags, saveDrill, type DrillRow } from "@/lib/data/drills-api";
+import { CatalogCard, CatalogFilters, useCatalog } from "@/components/library/catalog-section";
+import { catalogAsDrill, type CatalogDrill } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { addBoardFromDrill, useProject } from "../project-session";
 import { useEditor } from "../store";
@@ -78,6 +80,59 @@ function SaveForm({ onDone }: { onDone: (title: string) => void }) {
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Exercices prêts à l'emploi à insérer comme nouveau tableau du projet. */
+function CatalogInsert({ onDone }: { onDone: (title: string) => void }) {
+  const t = useTranslations("library");
+  const { lang, drills, filters } = useCatalog();
+  const [busy, setBusy] = useState(false);
+  const insert = async (drill: CatalogDrill) => {
+    setBusy(true);
+    try {
+      const d = catalogAsDrill(drill, lang);
+      await addBoardFromDrill(d);
+      onDone(d.title);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <CatalogFilters {...filters} compact />
+      <ul className={cn("grid max-h-[45dvh] grid-cols-2 gap-2 overflow-y-auto", busy && "pointer-events-none opacity-60")} data-testid="catalog-picker">
+        {drills.map((drill) => (
+          <li key={drill.id}>
+            <CatalogCard drill={drill} lang={lang} label={t("insertDrill", { title: drill.title[lang] })} onClick={() => void insert(drill)} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function InsertSource({ onDone }: { onDone: (title: string) => void }) {
+  const t = useTranslations("library");
+  const [source, setSource] = useState<"catalog" | "mine">("catalog");
+  return (
+    <div className="flex flex-col gap-3">
+      <div role="radiogroup" aria-label={t("catalog.source")} className="flex gap-1">
+        {(["catalog", "mine"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="radio"
+            aria-checked={source === key}
+            onClick={() => setSource(key)}
+            className={cn("h-8 rounded-full border px-3 text-sm", source === key ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted")}
+          >
+            {t(key === "catalog" ? "catalog.short" : "catalog.mineShort")}
+          </button>
+        ))}
+      </div>
+      {source === "catalog" ? <CatalogInsert onDone={onDone} /> : <InsertList onDone={onDone} />}
+    </div>
   );
 }
 
@@ -193,7 +248,7 @@ export function LibraryButton() {
           ) : tab === "save" ? (
             <SaveForm onDone={setDone} />
           ) : (
-            <InsertList
+            <InsertSource
               onDone={(title) => {
                 setDone(title);
                 setOpen(false);

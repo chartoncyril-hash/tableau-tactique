@@ -207,6 +207,14 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 - E2E : le faux Supabase implémente le sous-ensemble du protocole Phoenix utilisé par realtime-js
   (WebSocket, poussées binaires, présence) avec les mêmes règles d'accès.
 
+## Exercices prêts à l'emploi
+
+- `src/lib/catalog` : catalogue en code (pas de base de données). `builder.ts` écrit les schémas
+  (joueurs, matériel, tracés, étapes) avec des identifiants stables ; `u9.ts`, `u13.ts`,
+  `senior.ts` : 10 exercices chacun, textes fr / en ; `index.ts` : filtres, conversion en exercice
+  de bibliothèque (`catalogAsDrill`). Un test vérifie chaque schéma (objets sur le terrain, étapes
+  cohérentes, textes complets).
+
 ## Bibliothèque et présentation (phase 9c)
 
 - Table `drills` (titre, catégorie, étiquettes, scène, consignes, notes), personnelle ou de club,
