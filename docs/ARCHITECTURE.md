@@ -158,6 +158,10 @@ Google est câblé mais masqué tant que `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` ne vau
 - `stadium.tsx` : stade procédural (tribunes fusionnées, public en `InstancedMesh`, panneaux et
   bandeaux dessinés sur canevas avec le logo), buts en relief d'après les tracés du terrain. Une
   tribune se masque quand la caméra passe derrière elle. Décor au choix (`useView3d.decor`).
+- `real-player.tsx` : footballeurs réalistes (Rocketbox, MIT), glTF compressés (meshopt) dans
+  `public/models/players`, chargés à la demande ; un clone par joueur (`SkeletonUtils`), un
+  `AnimationMixer` piloté par la foulée (`strides`), tenue teintée dans le shader d'après un masque.
+  Chaîne de conversion : `tools/rocketbox`.
 - `ballAtFeet` (`layout.ts`) rapproche un ballon collé à un joueur ; `Traces3D` reprend
   `stepTraces` et `movePath3d` (`scene/animation.ts`), partagés avec le canevas 2D.
 - `View3dStage` sert dans l'éditeur et la présentation (`interactive` à faux) ; une seule vue 3D à

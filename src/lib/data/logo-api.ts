@@ -14,16 +14,12 @@ async function currentUid() {
   return data.session?.user.id ?? null;
 }
 
-const target = async (clubId: string | null) =>
-  clubId
-    ? db().from("clubs").select("logo_path").eq("id", clubId)
-    : db()
-        .from("profiles")
-        .select("logo_path")
-        .eq("id", (await currentUid()) ?? "");
-
 export async function getLogoPath(clubId: string | null): Promise<string | null> {
-  const { data, error } = await target(clubId);
+  const uid = clubId ? null : await currentUid();
+  // Sans compte (tableau local), pas de logo personnel : inutile d'interroger la base.
+  if (!clubId && !uid) return null;
+  const query = clubId ? db().from("clubs").select("logo_path").eq("id", clubId) : db().from("profiles").select("logo_path").eq("id", uid!);
+  const { data, error } = await query;
   if (error || !data?.[0]) return null;
   return (data[0] as { logo_path: string | null }).logo_path ?? null;
 }

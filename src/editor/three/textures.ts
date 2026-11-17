@@ -29,6 +29,44 @@ function loadSvg(svg: string, width: number, height: number): Promise<HTMLCanvas
   });
 }
 
+let grain: HTMLCanvasElement | null = null;
+
+/**
+ * Grain du gazon : un motif de bruit (brins clairs et sombres) posé en « lumière douce » sur la
+ * pelouse rastérisée, à l'échelle d'environ 2 cm par point. Rend l'herbe moins lisse de près.
+ */
+function grassGrain(canvas: HTMLCanvasElement, pxPerMeter: number) {
+  if (!grain) {
+    grain = document.createElement("canvas");
+    grain.width = grain.height = 256;
+    const g = grain.getContext("2d")!;
+    const img = g.createImageData(256, 256);
+    let seed = 7;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < img.data.length; i += 4) {
+      // Brins orientés : un peu de corrélation verticale.
+      const v = 128 + (rand() - 0.5) * 120;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  }
+  const g = canvas.getContext("2d");
+  if (!g) return;
+  g.save();
+  g.globalCompositeOperation = "soft-light";
+  g.globalAlpha = 0.35;
+  const pattern = g.createPattern(grain, "repeat");
+  if (pattern) {
+    // Un point du motif ≈ 4 cm sur le terrain, quelle que soit la résolution de la texture.
+    const k = Math.max(0.5, pxPerMeter * 0.04);
+    pattern.setTransform(new DOMMatrix().scale(k, k));
+    g.fillStyle = pattern;
+    g.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  g.restore();
+}
+
 /** Cadre couvert par la pelouse texturée, en coordonnées du tableau. */
 export function groundRect(scene: Scene): Box {
   const r = worldRect(scene.pitch);
@@ -55,6 +93,7 @@ export async function groundTexture(scene: Scene, maxSize: number): Promise<THRE
   const height = Math.round(full.h * scale);
   const svg = sceneToSvg({ ...scene, pitch }, { rect, width, objects: scene.objects.filter(isGroundDrawing) });
   const canvas = await loadSvg(svg, width, height);
+  grassGrain(canvas, scale);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;

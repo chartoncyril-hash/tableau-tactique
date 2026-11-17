@@ -10,7 +10,7 @@ import { roleIn, useWorkspace } from "@/lib/workspace";
 import { useProject } from "../project-session";
 import { useEditor } from "../store";
 import { CAMERA_PRESETS } from "./layout";
-import { setCameraPreset, setDecor, setFigures, useView3d } from "./view-mode";
+import { FIGURES, setCameraPreset, setDecor, setFigures, useView3d } from "./view-mode";
 
 // three.js n'est téléchargé qu'à la première ouverture de la vue 3D.
 const View3D = dynamic(() => import("./view-3d"), { ssr: false });
@@ -140,6 +140,7 @@ export function View3dStage({ interactive = true }: { interactive?: boolean }) {
   const ready = useView3d((s) => s.ready);
   const objects = useView3d((s) => s.objects);
   const traces = useView3d((s) => s.traces);
+  const realistic = useView3d((s) => s.realistic);
   const figures = useView3d((s) => s.figures);
   const decor = useView3d((s) => s.decor);
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -155,6 +156,7 @@ export function View3dStage({ interactive = true }: { interactive?: boolean }) {
       data-ready={ready}
       data-objects={objects}
       data-traces={traces}
+      data-realistic={realistic}
       data-camera={camera}
       data-decor={decor}
       className="absolute inset-0 bg-[#a9cfe8]"
@@ -188,7 +190,7 @@ export function View3dStage({ interactive = true }: { interactive?: boolean }) {
             <Choice
               label={t("figures")}
               value={figures}
-              options={["people", "pawns"] as const}
+              options={FIGURES}
               text={(v) => t(`figure.${v}`)}
               onChange={setFigures}
             />

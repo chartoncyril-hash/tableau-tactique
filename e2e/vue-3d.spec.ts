@@ -35,10 +35,14 @@ test("passer en 3D, changer de point de vue et revenir en 2D", async ({ page }) 
   await expect(view(page)).toHaveAttribute("data-camera", "goal");
 
   const figures = page.getByRole("radiogroup", { name: "Représentation des joueurs" });
+  await expect(figures.getByRole("radio", { name: "Réalistes" })).toHaveAttribute("aria-checked", "true");
+  // Les footballeurs réalistes (Rocketbox) sont téléchargés puis affichés.
+  await expect(view(page)).toHaveAttribute("data-realistic", "true", { timeout: 30_000 });
+  await figures.getByRole("radio", { name: "Personnages" }).click();
   await expect(figures.getByRole("radio", { name: "Personnages" })).toHaveAttribute("aria-checked", "true");
   await figures.getByRole("radio", { name: "Pions" }).click();
   await expect(figures.getByRole("radio", { name: "Pions" })).toHaveAttribute("aria-checked", "true");
-  await figures.getByRole("radio", { name: "Personnages" }).click();
+  await figures.getByRole("radio", { name: "Réalistes" }).click();
 
   // La scène 3D est bien dessinée : l'image n'est pas uniforme.
   const shot = await view(page).locator("canvas").screenshot();

@@ -414,6 +414,7 @@
       "unsupported": "Cet appareil ne permet pas l'affichage 3D (WebGL indisponible). La vue 2D et les exports restent disponibles.",
       "figures": "Représentation des joueurs",
       "figure": {
+        "real": "Réalistes",
         "people": "Personnages",
         "pawns": "Pions"
       },

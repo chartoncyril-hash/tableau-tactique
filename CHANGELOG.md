@@ -1,5 +1,17 @@
 # Journal des modifications
 
+## Footballeurs réalistes et décor plus réaliste en 3D
+
+- Nouvelle représentation « Réalistes », choisie par défaut : de vrais footballeurs 3D (bibliothèque
+  Microsoft Rocketbox, licence MIT), deux visages différents, aux couleurs de l'équipe (maillot uni,
+  rayé, cerceaux ou moitiés, short, chaussettes, liserés), gardien en tenue distincte.
+- Animations réelles : posture de repos naturelle, course qui se mélange au repos selon la vitesse,
+  foulée calée sur la distance parcourue. Les personnages simples s'affichent pendant le
+  téléchargement (environ 2 Mo, une seule fois).
+- Ballon à panneaux noirs et blancs, plus proche de sa vraie taille avec les joueurs réalistes.
+- Drapeaux de coin, bancs de touche avec toit transparent, grain du gazon.
+- Correction : pendant la lecture, un joueur qui s'éloigne n'emporte plus le ballon resté au sol.
+
 ## Stade 3D, formats de jeu et corrections de la vue 3D
 
 - Ballon dans les pieds : un ballon collé à un joueur sur le tableau 2D est placé dans ses pieds en

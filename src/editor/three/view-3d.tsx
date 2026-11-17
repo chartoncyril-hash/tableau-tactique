@@ -15,13 +15,14 @@ import { useProject } from "../project-session";
 import { displayObjects, useEditor } from "../store";
 import { ballAtFeet, cameraPose, isGroundDrawing, sceneOrigin, toWorld, yaw } from "./layout";
 import { Ball3D, BALL_RADIUS, Equipment3D, Figure3D, Player3D, strides } from "./models";
-import { PitchGoals, Sky, Stadium, useLogoImage } from "./stadium";
+import { CornerFlags, PitchGoals, Sky, Stadium, useLogoImage } from "./stadium";
 import { analysisTexture, groundRect, groundTexture } from "./textures";
-import { useView3d } from "./view-mode";
+import { RealPlayer3D, useRealPlayers, type RealAssets } from "./real-player";
+import { useView3d, type Figures } from "./view-mode";
 
 const FOV = 40;
 /** Distance du centre d'un joueur au centre d'un ballon dans ses pieds, selon la représentation. */
-const FEET = { people: 0.62, pawns: 1.75 } as const;
+const FEET = { real: 0.45, people: 0.62, pawns: 1.75 } as const;
 
 /** Tube en pointillés le long d'une courbe, arrêté avant la pointe de flèche. */
 function dashedTube(curve: THREE.Curve<THREE.Vector3>, radius: number, stopBefore: number) {
@@ -242,14 +243,24 @@ function AnalysisLayer({ scene, step, origin }: { scene: Scene; step: number; or
   );
 }
 
-function ObjectModel({ obj, scene, people }: { obj: SceneObject; scene: Scene; people: boolean }) {
+function ObjectModel({ obj, scene, figures, real }: { obj: SceneObject; scene: Scene; figures: Figures; real: RealAssets | null }) {
   switch (obj.type) {
     case "player": {
       const team = scene.teams.find((t) => t.id === obj.teamId);
-      return people ? <Figure3D obj={obj} team={team} /> : <Player3D obj={obj} team={team} />;
+      if (figures === "pawns") return <Player3D obj={obj} team={team} />;
+      // Pendant le chargement des avatars réalistes, les personnages simples les remplacent.
+      if (figures === "real" && real) return <RealPlayer3D obj={obj} team={team} assets={real} />;
+      return <Figure3D obj={obj} team={team} />;
     }
     case "ball":
-      return <Ball3D style={obj.style} />;
+      // Avec les joueurs réalistes, un ballon plus proche de sa vraie taille.
+      return figures === "real" ? (
+        <group scale={0.62}>
+          <Ball3D style={obj.style} />
+        </group>
+      ) : (
+        <Ball3D style={obj.style} />
+      );
     case "equipment":
       return <Equipment3D obj={obj} />;
     default:
@@ -279,8 +290,13 @@ function Objects({
   const invalidate = useThree((s) => s.invalidate);
   const refs = useRef(new Map<string, THREE.Group>());
   const kinds = useRef(new Map<string, SceneObject["type"]>());
-  const people = useView3d((s) => s.figures === "people");
-  const feet = FEET[people ? "people" : "pawns"];
+  const figures = useView3d((s) => s.figures);
+  const real = useRealPlayers(figures === "real");
+  useEffect(() => {
+    useView3d.setState({ realistic: !!real });
+    invalidate();
+  }, [real, invalidate]);
+  const feet = FEET[figures];
   const feetRef = useRef(feet);
   const readOnly = useEditor((s) => s.readOnly) || !interactive;
   const playing = usePlayback((s) => s.mode !== "idle");
@@ -334,9 +350,11 @@ function Objects({
   // Un ballon collé à un joueur sur le tableau est dans ses pieds en relief.
   const shown = (obj: SceneObject) => (obj.type === "ball" ? ballAtFeet(obj, players, feet) : obj);
 
+  const sceneRef = useRef(scene);
   useLayoutEffect(() => {
     feetRef.current = feet;
     kinds.current = new Map(objects.map((o) => [o.id, o.type]));
+    sceneRef.current = scene;
   });
 
   useEffect(() => {
@@ -346,14 +364,47 @@ function Objects({
   useEffect(() => {
     // Foulée des personnages : la phase avance avec la distance parcourue, l'amplitude suit la vitesse.
     const gait = new Map<string, { x: number; y: number; t: number; phase: number; amount: number }>();
+    // Pendant la lecture, le rapprochement d'un ballon vers les pieds est figé au début et à la fin
+    // de son déplacement, puis interpolé : un joueur qui s'en va n'emporte pas le ballon resté au sol.
+    let offsets: { key: string; scene: Scene; byBall: Map<string, { sx: number; sy: number; ex: number; ey: number; from: Pose; to: Pose }> } | null = null;
+    const ballOffsets = (step: number) => {
+      const scene = sceneRef.current;
+      const key = `${step}|${feetRef.current}`;
+      if (offsets?.key === key && offsets.scene === scene) return offsets.byBall;
+      const before = resolveStep(scene, step - 1);
+      const after = resolveStep(scene, step);
+      const playersOf = (poses: Map<string, Pose>) => [...poses].filter(([id]) => kinds.current.get(id) === "player").map(([, p]) => p);
+      const pb = playersOf(before);
+      const pa = playersOf(after);
+      const byBall = new Map<string, { sx: number; sy: number; ex: number; ey: number; from: Pose; to: Pose }>();
+      for (const [id, from] of before) {
+        if (kinds.current.get(id) !== "ball") continue;
+        const to = after.get(id) ?? from;
+        const s0 = ballAtFeet(from, pb, feetRef.current);
+        const e0 = ballAtFeet(to, pa, feetRef.current);
+        byBall.set(id, { sx: s0.x - from.x, sy: s0.y - from.y, ex: e0.x - to.x, ey: e0.y - to.y, from, to });
+      }
+      offsets = { key, scene, byBall };
+      return byBall;
+    };
     const place = (poses: Map<string, Pose>, playing: boolean) => {
       const now = performance.now();
       const players: Pose[] = [];
       for (const [id, pose] of poses) if (kinds.current.get(id) === "player") players.push(pose);
+      const step = usePlayback.getState().step;
       for (const [id, group] of refs.current) {
         const pose = poses.get(id);
         if (!pose) continue;
-        const at = kinds.current.get(id) === "ball" && pose.lift < 0.4 ? ballAtFeet(pose, players, feetRef.current) : pose;
+        let at: { x: number; y: number } = pose;
+        if (kinds.current.get(id) === "ball" && pose.lift < 0.4) {
+          const attached = playing && sceneRef.current.frames?.[step - 1]?.moves[id]?.attach;
+          const o = playing && !attached ? ballOffsets(step).get(id) : undefined;
+          if (o) {
+            const span = Math.hypot(o.to.x - o.from.x, o.to.y - o.from.y);
+            const t = span < 0.01 ? 0 : Math.min(1, Math.hypot(pose.x - o.from.x, pose.y - o.from.y) / span);
+            at = { x: pose.x + o.sx + (o.ex - o.sx) * t, y: pose.y + o.sy + (o.ey - o.sy) * t };
+          } else at = ballAtFeet(pose, players, feetRef.current);
+        }
         const [x, , z] = toWorld(at.x, at.y, origin);
         group.position.set(x, pose.lift, z);
         group.rotation.y = yaw(pose.rotation);
@@ -414,7 +465,7 @@ function Objects({
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
               </mesh>
             )}
-            <ObjectModel obj={obj} scene={scene} people={people} />
+            <ObjectModel obj={obj} scene={scene} figures={figures} real={real} />
           </group>
         );
       })}
@@ -526,7 +577,12 @@ function Goals({ scene }: { scene: Scene }) {
   const pitch = getPitch(scene.pitch.sport);
   if (scene.pitch.view === "blank") return null;
   const goals = pitch.markings.flatMap((m) => (m.t === "goal" ? [m] : []));
-  return <PitchGoals goals={goals} length={pitch.length} width={pitch.width} />;
+  return (
+    <>
+      <PitchGoals goals={goals} length={pitch.length} width={pitch.width} />
+      <CornerFlags length={pitch.length} width={pitch.width} />
+    </>
+  );
 }
 
 /**
@@ -536,7 +592,7 @@ function Goals({ scene }: { scene: Scene }) {
 export default function View3D({ interactive = true }: { interactive?: boolean }) {
   const scene = useEditor((s) => s.scene);
   const step = useEditor((s) => s.currentStep);
-  const people = useView3d((s) => s.figures === "people");
+  const figures = useView3d((s) => s.figures);
   const stadium = useView3d((s) => s.decor === "stadium");
   const origin = useMemo(() => sceneOrigin(scene.pitch), [scene.pitch]);
   const world = groundRect(scene);
@@ -581,7 +637,7 @@ export default function View3D({ interactive = true }: { interactive?: boolean }
       </PitchFrame>
       <Ground scene={scene} origin={origin} stadium={stadium} />
       <AnalysisLayer scene={scene} step={step} origin={origin} />
-      <Traces3D scene={scene} step={step} origin={origin} feet={FEET[people ? "people" : "pawns"]} />
+      <Traces3D scene={scene} step={step} origin={origin} feet={FEET[figures]} />
       <Objects scene={scene} step={step} origin={origin} interactive={interactive} />
       <CameraRig scene={scene} interactive={interactive} />
     </Canvas>

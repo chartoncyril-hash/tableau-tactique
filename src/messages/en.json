@@ -414,6 +414,7 @@
       "unsupported": "This device cannot display 3D (WebGL unavailable). The 2D view and exports are still available.",
       "figures": "Player style",
       "figure": {
+        "real": "Realistic",
         "people": "Figures",
         "pawns": "Pawns"
       },
