@@ -25,6 +25,8 @@ const view = (page: Page) => page.getByTestId("view-3d");
 async function open3d(page: Page) {
   await page.getByRole("button", { name: "Vue 3D", exact: true }).first().click();
   await expect(view(page)).toHaveAttribute("data-ready", "true", { timeout: 30_000 });
+  // Pions : la CI dessine sans carte graphique, les footballeurs réalistes y sont trop lents.
+  await page.getByRole("radiogroup", { name: "Représentation des joueurs" }).getByRole("radio", { name: "Pions" }).click();
 }
 
 test("choisir la catégorie : U10-U11 passe au foot à 8 et ses systèmes", async ({ page }) => {

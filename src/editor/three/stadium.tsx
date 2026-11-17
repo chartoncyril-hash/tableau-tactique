@@ -268,7 +268,8 @@ function Stand({ span, rows, seat, seed, banner, roof }: StandProps) {
         <meshStandardMaterial color={seat} roughness={0.7} />
       </mesh>
       <instancedMesh ref={people} args={[undefined, undefined, crowd.length]} key={crowd.length}>
-        <capsuleGeometry args={[0.19, 0.5, 3, 8]} />
+        {/* Silhouette très simple : des milliers de spectateurs restent légers à dessiner. */}
+        <boxGeometry args={[0.38, 0.9, 0.3]} />
         <meshStandardMaterial roughness={0.85} />
       </instancedMesh>
       {/* Mur du fond, avec le bandeau du club tourné vers le terrain. */}
@@ -405,6 +406,7 @@ export function Stadium({ length: L, width: W, name, logo, accent }: StadiumProp
         <meshStandardMaterial color="#3f7a3f" roughness={1} />
       </mesh>
 
+      <Dugouts width={W} boardSide={layout.boardSide} />
       <group position={[0, 0, sideZ]}>
         <Board length={L + 6} texture={board} />
       </group>
@@ -545,6 +547,87 @@ export function PitchGoals({
           </group>
         );
       })}
+    </>
+  );
+}
+
+/** Drapeaux de coin : mât de 1,5 m et fanion, aux quatre coins du terrain (repère local). */
+export function CornerFlags({ length, width, color = "#facc15" }: { length: number; width: number; color?: string }) {
+  const pennant = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0);
+    shape.lineTo(0.45, -0.15);
+    shape.lineTo(0, -0.32);
+    shape.closePath();
+    return new THREE.ShapeGeometry(shape);
+  }, []);
+  useEffect(() => () => pennant.dispose(), [pennant]);
+  return (
+    <>
+      {[
+        [-1, -1],
+        [-1, 1],
+        [1, -1],
+        [1, 1],
+      ].map(([sx, sz]) => (
+        <group key={`${sx}${sz}`} position={[(sx * length) / 2, 0, (sz * width) / 2]} rotation-y={Math.atan2(-sz, sx) - Math.PI / 2}>
+          <mesh position-y={0.75} castShadow>
+            <cylinderGeometry args={[0.02, 0.025, 1.5, 8]} />
+            <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+          </mesh>
+          <mesh geometry={pennant} position-y={1.5}>
+            <meshStandardMaterial color={color} side={THREE.DoubleSide} roughness={0.7} />
+          </mesh>
+        </group>
+      ))}
+    </>
+  );
+}
+
+/** Banc de touche : coque, sièges et toit transparent arrondi, ouvert vers le terrain (vers -z). */
+function Dugout({ length }: { length: number }) {
+  const seats = Math.max(4, Math.round(length / 0.6));
+  return (
+    <group>
+      <mesh position={[0, 0.06, 0.55]} receiveShadow>
+        <boxGeometry args={[length + 0.3, 0.12, 1.4]} />
+        <meshStandardMaterial color="#4b5563" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 1.1, 1.22]} castShadow>
+        <boxGeometry args={[length + 0.3, 2.2, 0.08]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.6} />
+      </mesh>
+      {Array.from({ length: seats }, (_, i) => (
+        <group key={i} position={[-length / 2 + 0.3 + (i * (length - 0.6)) / Math.max(1, seats - 1), 0, 0.8]}>
+          <mesh position-y={0.48}>
+            <boxGeometry args={[0.46, 0.08, 0.44]} />
+            <meshStandardMaterial color="#1d4ed8" roughness={0.6} />
+          </mesh>
+          <mesh position={[0, 0.82, 0.2]}>
+            <boxGeometry args={[0.46, 0.62, 0.06]} />
+            <meshStandardMaterial color="#1d4ed8" roughness={0.6} />
+          </mesh>
+        </group>
+      ))}
+      {/* Toit en plexiglas : quart de cylindre de l'arrière vers l'avant. */}
+      <mesh position={[0, 0.1, 1.22]} rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[2.1, 2.1, length + 0.3, 24, 1, true, Math.PI, Math.PI / 2]} />
+        <meshStandardMaterial color="#cfe8ff" transparent opacity={0.28} side={THREE.DoubleSide} roughness={0.1} metalness={0.1} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Deux bancs de touche de part et d'autre de la ligne médiane, du côté opposé à la caméra de tribune. */
+export function Dugouts({ width, boardSide }: { width: number; boardSide: number }) {
+  const z = -(width / 2 + Math.max(1.6, boardSide - 1.9));
+  return (
+    <>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 8, 0, z]} rotation-y={Math.PI}>
+          <Dugout length={5.5} />
+        </group>
+      ))}
     </>
   );
 }

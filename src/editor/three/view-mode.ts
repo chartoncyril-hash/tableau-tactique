@@ -10,8 +10,10 @@ interface View3dState {
   objects: number;
   /** Trajectoires tracées en relief (lu par les tests). */
   traces: number;
-  /** Joueurs en personnages (par défaut) ou en pions. */
-  figures: "people" | "pawns";
+  /** Avatars réalistes chargés et affichés (lu par les tests). */
+  realistic: boolean;
+  /** Joueurs réalistes (par défaut), en personnages simples ou en pions. */
+  figures: Figures;
   /** Décor : stade avec tribunes (par défaut) ou simple pelouse. */
   decor: "stadium" | "plain";
   /** La présentation affiche sa propre vue 3D : celle de l'éditeur se retire. */
@@ -24,7 +26,8 @@ export const useView3d = create<View3dState>(() => ({
   ready: false,
   objects: 0,
   traces: 0,
-  figures: "people",
+  realistic: false,
+  figures: "real",
   decor: "stadium",
   presenting: false,
 }));
@@ -37,7 +40,10 @@ export function setCameraPreset(camera: CameraPreset) {
   useView3d.setState({ camera });
 }
 
-export function setFigures(figures: "people" | "pawns") {
+export const FIGURES = ["real", "people", "pawns"] as const;
+export type Figures = (typeof FIGURES)[number];
+
+export function setFigures(figures: Figures) {
   useView3d.setState({ figures });
 }
 

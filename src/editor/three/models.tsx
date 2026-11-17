@@ -215,8 +215,49 @@ export function Figure3D({ obj, team }: { obj: PlayerObject; team: Team | undefi
   );
 }
 
+let paneled: THREE.BufferGeometry | null = null;
+
+/**
+ * Ballon à panneaux, façon ballon classique : douze pentagones noirs (autour des sommets d'un
+ * icosaèdre) sur fond blanc, avec un léger liseré gris entre panneaux. Rayon 1.
+ */
+function paneledBall() {
+  if (paneled) return paneled;
+  const base = new THREE.IcosahedronGeometry(1, 0);
+  const pos0 = base.attributes.position;
+  const poles: THREE.Vector3[] = [];
+  for (let i = 0; i < pos0.count; i++) {
+    const v = new THREE.Vector3().fromBufferAttribute(pos0, i).normalize();
+    if (!poles.some((p) => p.distanceTo(v) < 1e-3)) poles.push(v);
+  }
+  base.dispose();
+  const g = new THREE.IcosahedronGeometry(1, 6);
+  const pos = g.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    let best = -1;
+    for (const p of poles) best = Math.max(best, v.dot(p));
+    const angle = Math.acos(Math.min(1, best));
+    // Pentagone noir, couture grise, panneau blanc.
+    const c = angle < 0.33 ? 0.05 : angle < 0.36 ? 0.55 : 0.96;
+    colors.set([c, c, c], i * 3);
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  paneled = g;
+  return g;
+}
+
 export function Ball3D({ style = "classic" }: { style?: BallStyle }) {
   const r = style === "medicine" ? BALL_RADIUS * 1.3 : style === "tennis" ? BALL_RADIUS * 0.6 : BALL_RADIUS;
+  if (style === "classic") {
+    return (
+      <mesh position-y={r} scale={r} geometry={paneledBall()} castShadow>
+        <meshStandardMaterial vertexColors roughness={0.4} />
+      </mesh>
+    );
+  }
   return (
     <mesh position-y={r} scale={style === "rugby" ? [1.45, 1, 1] : 1} castShadow>
       <sphereGeometry args={[r, 24, 16]} />

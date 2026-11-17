@@ -15,6 +15,12 @@ async function withPanel(page: Page, action: () => Promise<void>) {
 
 const view = (page: Page) => page.getByTestId("view-3d");
 
+/** Rendu léger (pions, pelouse seule) pour les tests qui ne portent pas sur l'apparence : la CI dessine sans carte graphique. */
+async function light3d(page: Page) {
+  await page.getByRole("radiogroup", { name: "Représentation des joueurs" }).getByRole("radio", { name: "Pions" }).click();
+  await page.getByRole("radiogroup", { name: "Décor" }).getByRole("radio", { name: "Pelouse seule" }).click();
+}
+
 test("passer en 3D, changer de point de vue et revenir en 2D", async ({ page }) => {
   await openEditor(page);
   await withPanel(page, () => page.getByRole("button", { name: "Placer Équipe A" }).click());
@@ -34,11 +40,16 @@ test("passer en 3D, changer de point de vue et revenir en 2D", async ({ page }) 
   await cameras.getByRole("radio", { name: "Derrière le but" }).click();
   await expect(view(page)).toHaveAttribute("data-camera", "goal");
 
+  await page.getByRole("radiogroup", { name: "Décor" }).getByRole("radio", { name: "Pelouse seule" }).click();
   const figures = page.getByRole("radiogroup", { name: "Représentation des joueurs" });
+  await expect(figures.getByRole("radio", { name: "Réalistes" })).toHaveAttribute("aria-checked", "true");
+  // Les footballeurs réalistes (Rocketbox) sont téléchargés puis affichés.
+  await expect(view(page)).toHaveAttribute("data-realistic", "true", { timeout: 30_000 });
+  await figures.getByRole("radio", { name: "Personnages" }).click();
   await expect(figures.getByRole("radio", { name: "Personnages" })).toHaveAttribute("aria-checked", "true");
+  await expect(view(page)).toHaveAttribute("data-realistic", "false");
   await figures.getByRole("radio", { name: "Pions" }).click();
   await expect(figures.getByRole("radio", { name: "Pions" })).toHaveAttribute("aria-checked", "true");
-  await figures.getByRole("radio", { name: "Personnages" }).click();
 
   // La scène 3D est bien dessinée : l'image n'est pas uniforme.
   const shot = await view(page).locator("canvas").screenshot();
@@ -60,6 +71,7 @@ test("lire l'animation dans la vue 3D", async ({ page }) => {
 
   await page.getByRole("button", { name: "Vue 3D" }).click();
   await expect(view(page)).toHaveAttribute("data-ready", "true", { timeout: 30_000 });
+  await light3d(page);
   await page.getByTestId("timeline").getByRole("tab", { name: "Départ" }).click();
   await page.getByRole("button", { name: "Lire l'animation" }).click();
   await expect(page.getByTestId("timeline")).toHaveAttribute("data-mode", "idle", { timeout: 10_000 });
@@ -125,6 +137,7 @@ test("déplacer un joueur en le faisant glisser dans la vue 3D, puis annuler", a
 
   await page.getByRole("button", { name: "Vue 3D" }).click();
   await expect(view(page)).toHaveAttribute("data-ready", "true", { timeout: 30_000 });
+  await light3d(page);
   await page.getByRole("radiogroup", { name: "Point de vue" }).getByRole("radio", { name: "Dessus" }).click();
   await page.waitForTimeout(1200);
   const canvas = view(page).locator("canvas");
@@ -154,6 +167,7 @@ test("les zones d'influence s'affichent aussi en 3D", async ({ page }) => {
   await withPanel(page, () => page.getByRole("button", { name: "Placer Équipe A" }).click());
   await page.getByRole("button", { name: "Vue 3D" }).click();
   await expect(view(page)).toHaveAttribute("data-ready", "true", { timeout: 30_000 });
+  await light3d(page);
   await page.getByRole("radiogroup", { name: "Point de vue" }).getByRole("radio", { name: "Dessus" }).click();
   await page.waitForTimeout(1200);
   const canvas = view(page).locator("canvas");
