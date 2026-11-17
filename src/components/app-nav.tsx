@@ -30,6 +30,7 @@ export function AppNav() {
   const tabs = [
     { href: "/app", key: "projects", active: pathname === "/app" || pathname.startsWith("/app/project") },
     { href: "/app/teams", key: "teams", active: pathname.startsWith("/app/teams") },
+    { href: "/app/library", key: "library", active: pathname.startsWith("/app/library") },
     ...(clubId ? [{ href: "/app/club", key: "club", active: pathname.startsWith("/app/club") }] : []),
   ] as const;
 
@@ -44,14 +45,14 @@ export function AppNav() {
 
   return (
     <div className="mb-6 flex flex-col-reverse gap-3 border-b sm:flex-row sm:items-end sm:justify-between">
-      <nav aria-label={t("label")} className="flex gap-1">
+      <nav aria-label={t("label")} className="flex gap-1 overflow-x-auto">
         {tabs.map((tab) => (
           <Link
             key={tab.key}
             href={tab.href}
             aria-current={tab.active ? "page" : undefined}
             className={cn(
-              "-mb-px inline-flex h-11 items-center border-b-2 px-4 text-sm font-medium transition-colors",
+              "-mb-px inline-flex h-11 shrink-0 items-center border-b-2 px-3 text-sm font-medium transition-colors sm:px-4",
               tab.active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >

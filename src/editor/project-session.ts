@@ -236,6 +236,12 @@ async function appendBoard(
   sessionEvents.boardsChanged();
 }
 
+/** Exercice de la bibliothèque ajouté au projet comme nouveau tableau (schéma, consignes, notes). */
+export function addBoardFromDrill(drill: { title: string; scene: Scene; sheet: DrillSheet; notes: string }) {
+  if (locked()) return;
+  return appendBoard(drill.title.slice(0, 80), migrateScene(drill.scene) ?? createScene(), { sheet: drill.sheet, notes: drill.notes });
+}
+
 /** Nouveau tableau vide, avec le même terrain et les mêmes équipes que le tableau affiché. */
 export function addBoard(name: string) {
   if (locked()) return;

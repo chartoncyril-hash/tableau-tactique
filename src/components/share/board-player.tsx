@@ -17,7 +17,19 @@ const handlers: NodeHandlers = { onPointerDown: noop, onDragStart: noop, onDragM
 const PAD = 2;
 
 /** Lecteur en lecture seule d'un tableau animé, pour les liens publics. */
-export default function BoardPlayer({ scene }: { scene: Scene }) {
+/**
+ * `keyboard` : Espace lance ou met en pause, flèches haut et bas changent d'étape (présentation).
+ * `overlay` : calque posé sur le tableau, à sa taille (dessin à main levée de la présentation).
+ */
+export default function BoardPlayer({
+  scene,
+  keyboard = false,
+  overlay,
+}: {
+  scene: Scene;
+  keyboard?: boolean;
+  overlay?: React.ReactNode;
+}) {
   const t = useTranslations("shared");
   const hostRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<Konva.Layer>(null);
@@ -95,9 +107,29 @@ export default function BoardPlayer({ scene }: { scene: Scene }) {
     timeRef.current = (scene.frames ?? []).slice(0, n).reduce((sum, f) => sum + f.duration, 0);
   };
 
+  useEffect(() => {
+    if (!keyboard || frames === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement | null)?.closest("input, textarea, select, button")) return;
+      if (e.key === " ") {
+        e.preventDefault();
+        if (playing) setPlaying(false);
+        else start();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        goTo(Math.min(frames, step + 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        goTo(Math.max(0, step - 1));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   return (
     <div className="flex flex-col gap-2">
-      <div ref={hostRef} className="w-full overflow-hidden rounded-lg border" style={{ height: height || undefined }}>
+      <div ref={hostRef} className="relative w-full overflow-hidden rounded-lg border" style={{ height: height || undefined }}>
         {width > 0 && (
           <Stage width={width} height={height} scaleX={scale} scaleY={scale} x={(PAD - rect.x) * scale} y={(PAD - rect.y) * scale} listening={false}>
             <Layer listening={false}>
@@ -119,6 +151,7 @@ export default function BoardPlayer({ scene }: { scene: Scene }) {
             </Layer>
           </Stage>
         )}
+        {overlay}
       </div>
       {frames > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">

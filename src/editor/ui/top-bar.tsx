@@ -24,6 +24,8 @@ import { IconButton } from "./controls";
 import { ExportButton } from "./export-dialog";
 import { PresenceAvatars } from "../collab/presence-avatars";
 import { CommentsButton } from "../collab/comments-panel";
+import { PresentButton } from "../present/presenter";
+import { LibraryButton } from "./library-dialog";
 import { setViewMode, useView3d } from "../three/view-mode";
 
 function ProjectTitle() {
@@ -60,6 +62,8 @@ function ProjectTitle() {
         <span className="sr-only md:not-sr-only">{label}</span>
       </span>
       <PresenceAvatars />
+      <PresentButton />
+      <LibraryButton />
       <CommentsButton />
       <SessionButton />
     </>

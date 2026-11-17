@@ -10,7 +10,7 @@ const PORT = 54321;
 const PASSWORD = "motdepasse-test";
 const tables = {
   folders: [], projects: [], boards: [], board_versions: [], shares: [], teams: [], players: [],
-  clubs: [], club_members: [], club_invites: [], board_comments: [],
+  clubs: [], club_members: [], club_invites: [], board_comments: [], drills: [],
 };
 /** Utilisateurs connus (pour la liste des membres d'un club). */
 const users = new Map();
@@ -24,6 +24,7 @@ const defaults = {
   shares: () => ({ token: randomUUID().replaceAll("-", ""), revoked_at: null }),
   teams: () => ({ club: "", club_id: null, category: "", kit: {} }),
   players: () => ({ first_name: "", last_name: "", number: "", position: "", foot: "", notes: "", photo_path: null }),
+  drills: () => ({ club_id: null, category: "", tags: [], sheet: {}, notes: "" }),
   board_comments: () => ({ parent_id: null, x: null, y: null, resolved_at: null, resolved_by: null, author_name: "" }),
   club_invites: () => ({
     role: "coach", label: "", token: randomUUID().replaceAll("-", ""),
@@ -39,7 +40,7 @@ const byId = (table, id) => tables[table].find((r) => r.id === id);
 
 function readable(table, row, uid) {
   switch (table) {
-    case "folders": case "projects": case "teams": return canRead(row.club_id, row.owner_id, uid);
+    case "folders": case "projects": case "teams": case "drills": return canRead(row.club_id, row.owner_id, uid);
     case "boards": { const p = byId("projects", row.project_id); return !!p && readable("projects", p, uid); }
     case "board_versions": { const b = byId("boards", row.board_id); return !!b && readable("boards", b, uid); }
     case "shares": return editable(table, row, uid);
@@ -53,7 +54,7 @@ function readable(table, row, uid) {
 }
 function editable(table, row, uid) {
   switch (table) {
-    case "folders": case "projects": case "teams": return canEdit(row.club_id, row.owner_id, uid);
+    case "folders": case "projects": case "teams": case "drills": return canEdit(row.club_id, row.owner_id, uid);
     case "boards": case "shares": { const p = byId("projects", row.project_id); return !!p && canEdit(p.club_id, p.owner_id, uid); }
     case "board_versions": { const b = byId("boards", row.board_id); return !!b && editable("boards", b, uid); }
     case "players": { const t = byId("teams", row.team_id); return !!t && canEdit(t.club_id, t.owner_id, uid); }
@@ -138,6 +139,10 @@ function matches(row, params) {
       if (value == null) return false;
     } else if (raw.startsWith("eq.")) {
       if (String(value) !== raw.slice(3)) return false;
+    } else if (raw.startsWith("ilike.")) {
+      // Motif PostgREST : `*` ou `%` = n'importe quelle suite de caractères.
+      const pattern = raw.slice(6).replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/[*%]/g, ".*");
+      if (!new RegExp(`^${pattern}$`, "i").test(String(value ?? ""))) return false;
     } else {
       throw new Error(`filtre non géré : ${key}=${raw}`);
     }
