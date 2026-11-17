@@ -268,7 +268,8 @@ function Stand({ span, rows, seat, seed, banner, roof }: StandProps) {
         <meshStandardMaterial color={seat} roughness={0.7} />
       </mesh>
       <instancedMesh ref={people} args={[undefined, undefined, crowd.length]} key={crowd.length}>
-        <capsuleGeometry args={[0.19, 0.5, 3, 8]} />
+        {/* Silhouette très simple : des milliers de spectateurs restent légers à dessiner. */}
+        <boxGeometry args={[0.38, 0.9, 0.3]} />
         <meshStandardMaterial roughness={0.85} />
       </instancedMesh>
       {/* Mur du fond, avec le bandeau du club tourné vers le terrain. */}
