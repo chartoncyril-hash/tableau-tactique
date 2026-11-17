@@ -1,5 +1,13 @@
 # Journal des modifications
 
+## Tableau de bord du propriétaire
+
+- Onglet « Tableau de bord », visible des seuls administrateurs de l'application : comptes
+  (total, nouveaux, actifs sur 7 et 30 jours), inscriptions et projets créés par jour sur 30 jours,
+  contenus (clubs, effectifs, joueurs, exercices, partages, commentaires), derniers comptes.
+- Sécurité : table `app_admins` (remplie à la main, aucune écriture depuis l'API), fonctions
+  `is_app_admin` et `admin_stats` qui refusent tout autre appelant.
+
 ## Exercices prêts à l'emploi
 
 - 30 exercices livrés avec l'application, 10 par tranche d'âge (U6-U9 foot à 5, U10-U13 foot à 8,

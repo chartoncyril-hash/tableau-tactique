@@ -794,7 +794,8 @@
     "cancel": "Cancel",
     "close": "Close",
     "error": "Could not create the club. Please try again.",
-    "library": "Library"
+    "library": "Library",
+    "admin": "Dashboard"
   },
   "club": {
     "title": "Club",
@@ -955,5 +956,44 @@
     "boardNotes": "Notes",
     "help": "← → boards · Space: play · ↑ ↓ steps · V: 3D view · D: draw · X: clear · Esc: exit",
     "view3d": "3D view (V)"
+  },
+  "admin": {
+    "title": "Dashboard",
+    "intro": "App usage: accounts, activity and content created. Only you can see this.",
+    "refresh": "Refresh",
+    "error": "Statistics unavailable right now.",
+    "loading": "Loading…",
+    "forbidden": "This page is reserved for the app administrator.",
+    "accounts": "Accounts",
+    "kpi": {
+      "total": "Accounts",
+      "confirmed": "{count, plural, one {# confirmed address} other {# confirmed addresses}}",
+      "new7": "New (7 days)",
+      "new30": "{count} in 30 days",
+      "active7": "Active (7 days)",
+      "active30": "{count} in 30 days",
+      "projects": "Projects",
+      "boards": "{count, plural, one {# board} other {# boards}}"
+    },
+    "signups": "Sign-ups, last 30 days",
+    "projectsPerDay": "Projects created, last 30 days",
+    "content": "Content",
+    "items": {
+      "clubs": "Clubs",
+      "teams": "Squads",
+      "players": "Players",
+      "drills": "Saved drills",
+      "shares": "Active share links",
+      "comments": "Comments"
+    },
+    "recent": "Latest accounts",
+    "unconfirmed": "unconfirmed",
+    "col": {
+      "email": "Email",
+      "created": "Signed up",
+      "lastSeen": "Last sign-in",
+      "projects": "Projects",
+      "clubs": "Clubs"
+    }
   }
 }

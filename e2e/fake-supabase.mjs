@@ -200,7 +200,41 @@ function insert(table, body, owner, { check = true } = {}) {
   return row;
 }
 
+/** Faux administrateur de l'application : toute adresse qui commence par « admin- ». */
+const isAdmin = (uid) => (users.get(uid) ?? "").startsWith("admin-");
+const perDay = (dates) => {
+  const out = [];
+  for (let i = 29; i >= 0; i--) {
+    const day = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    out.push({ day, count: dates.filter((d) => d.slice(0, 10) === day).length });
+  }
+  return out;
+};
+
 const rpc = {
+  is_app_admin(args, owner) {
+    return isAdmin(owner);
+  },
+  admin_stats(args, owner) {
+    if (!isAdmin(owner)) throw Object.assign(new Error("forbidden"), { status: 403 });
+    const now = new Date().toISOString();
+    const ids = [...users.keys()];
+    const live = (t) => tables[t].filter((r) => !r.deleted_at).length;
+    return {
+      users: { total: ids.length, confirmed: ids.length, new7: ids.length, new30: ids.length, active7: ids.length, active30: ids.length },
+      content: {
+        projects: live("projects"), boards: live("boards"), clubs: tables.clubs.length, teams: live("teams"), players: tables.players.length,
+        drills: live("drills"), shares: tables.shares.filter((r) => !r.revoked_at).length, comments: tables.board_comments.length,
+      },
+      signups: perDay(ids.map(() => now)),
+      projectsPerDay: perDay(tables.projects.map((p) => p.created_at ?? now)),
+      recent: ids.map((id) => ({
+        email: users.get(id), created_at: now, last_sign_in_at: now, confirmed: true,
+        projects: tables.projects.filter((p) => p.owner_id === id && !p.deleted_at).length,
+        clubs: tables.club_members.filter((m) => m.user_id === id).length,
+      })),
+    };
+  },
   create_project(args, owner) {
     const p = insert("projects", { name: args.p_name, folder_id: args.p_folder ?? null, club_id: args.p_club ?? null }, owner);
     insert("boards", { project_id: p.id, name: args.p_board_name, scene: args.p_scene, position: 0 }, owner);
