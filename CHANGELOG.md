@@ -1,5 +1,18 @@
 # Journal des modifications
 
+## Exercices prêts à l'emploi
+
+- 30 exercices livrés avec l'application, 10 par tranche d'âge (U6-U9 foot à 5, U10-U13 foot à 8,
+  U14 à seniors foot à 11), classés par type (échauffement, technique, tactique, jeu, finition,
+  athlétique, gardien, coups de pied arrêtés) : jeux de l'école de foot FFF, rondos (Ajax,
+  FC Barcelone), FIFA 11+, jeu de position, contre-pressing, parcours de Hoff…
+- Chaque exercice a son schéma (matériel en place, tracés), des étapes animées et une fiche
+  complète (objectif, but, consignes, durée, joueurs, espace, variables, comportements, origine),
+  en français et en anglais.
+- Bibliothèque : onglet « Prêts à l'emploi » par défaut, filtres âge / type / recherche, aperçu
+  animé, « Créer un projet avec cet exercice », « Copier dans ma bibliothèque » pour l'adapter.
+  Dans l'éditeur, insertion directe comme nouveau tableau.
+
 ## Footballeurs réalistes et décor plus réaliste en 3D
 
 - Nouvelle représentation « Réalistes », choisie par défaut : de vrais footballeurs 3D (bibliothèque

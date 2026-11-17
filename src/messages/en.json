@@ -920,6 +920,25 @@
       "variables": "Variables",
       "method": "Teaching method",
       "behaviours": "Expected behaviours"
+    },
+    "catalog": {
+      "tab": "Ready-made ({count})",
+      "tabMine": "My drills",
+      "tabClub": "Club drills",
+      "short": "Ready-made",
+      "mineShort": "My library",
+      "source": "Drill source",
+      "intro": "Well-known, proven drills (French FA grassroots games, Ajax and Barça rondos, FIFA 11+, positional play, counter-pressing…), with equipment set up, animated movements and a completed sheet. Create a project in one click or copy them to adapt.",
+      "band": "Age group",
+      "allAges": "All ages",
+      "bands": {
+        "u9": "U6-U9 · 5-a-side",
+        "u13": "U10-U13 · 8-a-side",
+        "senior": "U14 to seniors · 11-a-side"
+      },
+      "copy": "Copy to my library",
+      "copyClub": "Copy to the club library",
+      "copied": "“{title}” is in your library: you can adapt it."
     }
   },
   "present": {
